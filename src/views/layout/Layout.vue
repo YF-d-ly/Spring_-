@@ -25,7 +25,7 @@
             <i :class="item.icon"></i>
             <span slot="title">{{ item.menu_name }}</span>
           </el-menu-item>
-          <el-submenu v-else :index="String(item.id)" :key="item.id">
+          <el-submenu v-else :index="String(item.id) ">
             <template slot="title">
               <i :class="item.icon"></i>
               <span>{{ item.menu_name }}</span>
