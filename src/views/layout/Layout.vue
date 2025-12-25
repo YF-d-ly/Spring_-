@@ -19,13 +19,13 @@
           <el-menu-item 
             v-if="!item.children" 
             :index="item.menu_path" 
-            :key="item.id" 
+            :key="`${item.id}_item`" 
             @click="$router.push(item.menu_path)"
           >
             <i :class="item.icon"></i>
             <span slot="title">{{ item.menu_name }}</span>
           </el-menu-item>
-          <el-submenu v-else :index="String(item.id) ">
+          <el-submenu v-else :index="String(item.id)" :key="`${item.id}_submenu`">
             <template slot="title">
               <i :class="item.icon"></i>
               <span>{{ item.menu_name }}</span>
