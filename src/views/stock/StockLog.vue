@@ -279,9 +279,24 @@ export default {
     }
   },
   created() {
+    // 从路由参数获取搜索关键词
+    if (this.$route.query.goods_name) {
+      this.searchForm.goods_name = this.$route.query.goods_name
+    }
+    
     this.fetchWarehouseList()
     this.fetchGoodsList()
     this.fetchStockLogList()
+  },
+  watch: {
+    '$route.query.goods_name': {
+      handler(newVal) {
+        if (newVal) {
+          this.searchForm.goods_name = newVal
+          this.fetchStockLogList()
+        }
+      }
+    }
   },
   methods: {
     // 获取仓库列表

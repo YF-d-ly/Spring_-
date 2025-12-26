@@ -196,6 +196,17 @@ export default {
     closePanel() {
       this.isOpen = false
     },
+    handleSearch() {
+      if (!this.searchKeyword) return
+      
+      this.closePanel()
+      this.$router.push({
+        path: '/stock/log',
+        query: { goods_name: this.searchKeyword }
+      })
+      
+      this.searchKeyword = '' // 清空搜索框
+    },
     handleAction(action) {
       this.closePanel()
       

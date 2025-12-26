@@ -2,10 +2,10 @@
 import service from './index'
 
 export const goodsApi = {
-    // 获取货品列表
+    // 获取货品列表（分页）
     getGoodsList(params) {
         return service({
-            url: '/goods/list',
+            url: '/goods/page',  // 移除 /api 前缀，因为代理会自动添加
             method: 'get',
             params
         })
@@ -32,49 +32,5 @@ export const goodsApi = {
             url: `/goods/delete/${id}`,
             method: 'delete'
         })
-    },
-    // 获取货品类别列表
-    getCategoryList() {
-        return service({
-            url: '/goods/category/list',
-            method: 'get'
-        })
-    },
-    // 添加货品类别
-    addCategory(data) {
-        return service({
-            url: '/goods/category/add',
-            method: 'post',
-            data
-        })
-    },
-    // 更新货品类别
-    updateCategory(data) {
-        return service({
-            url: '/goods/category/update',
-            method: 'put',
-            data
-        })
-    },
-    // 删除货品类别
-    deleteCategory(id) {
-        return service({
-            url: `/goods/category/delete/${id}`,
-            method: 'delete'
-        })
-    },
-    // 上传图片
-    uploadImage(file) {
-        const formData = new FormData()
-        formData.append('file', file)
-        return service({
-            url: '/goods/upload',
-            method: 'post',
-            data: formData,
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        })
     }
 }
-
