@@ -28,7 +28,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="仓库">
-          <el-select v-model="searchForm.warehouseId" placeholder="请选择仓库" clearable style="width: 200px;">
+          <el-select v-model="searchForm.warehouse_id" placeholder="请选择仓库" clearable style="width: 200px;">
             <el-option 
               v-for="item in warehouseList" 
               :key="item.id" 
@@ -116,8 +116,8 @@
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="类别" prop="categoryId">
-              <el-select v-model="goodsForm.categoryId" placeholder="请选择类别" style="width: 100%;">
+            <el-form-item label="类别" prop="category_id">
+              <el-select v-model="goodsForm.category_id" placeholder="请选择类别" style="width: 100%;">
                 <el-option 
                   v-for="item in categoryList" 
                   :key="item.id" 
@@ -128,8 +128,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="所属仓库" prop="warehouseId">
-              <el-select v-model="goodsForm.warehouseId" placeholder="请选择仓库" style="width: 100%;">
+            <el-form-item label="所属仓库" prop="warehouse_id">
+              <el-select v-model="goodsForm.warehouse_id" placeholder="请选择仓库" style="width: 100%;">
                 <el-option 
                   v-for="item in warehouseList" 
                   :key="item.id" 
@@ -204,14 +204,14 @@ export default {
       total: 0,
       searchForm: {
         name: '',
-        categoryId: null, // 修改为驼峰命名
-        warehouseId: null // 修改为驼峰命名
+        category_id: null,
+        warehouse_id: null
       },
       goodsForm: {
         id: null,
         name: '',
-        categoryId: null, // 修改为驼峰命名
-        warehouseId: null, // 修改为驼峰命名
+        category_id: null,
+        warehouse_id: null,
         price: 0,
         stock: 0,
         image: '',
@@ -221,10 +221,10 @@ export default {
         name: [
           { required: true, message: '请输入货品名称', trigger: 'blur' }
         ],
-        categoryId: [ // 修改为驼峰命名
+        category_id: [
           { required: true, message: '请选择类别', trigger: 'change' }
         ],
-        warehouseId: [ // 修改为驼峰命名
+        warehouse_id: [
           { required: true, message: '请选择仓库', trigger: 'change' }
         ],
         price: [
@@ -278,19 +278,21 @@ export default {
       try {
         const params = {
           page: this.currentPage,
-          size: this.pageSize,
+          size: this.pageSize,  // 将limit改为size
           name: this.searchForm.name,
-          categoryId: this.searchForm.categoryId, // 修改为驼峰命名
-          warehouseId: this.searchForm.warehouseId // 修改为驼峰命名
+          category_id: this.searchForm.category_id,
+          warehouse_id: this.searchForm.warehouse_id
         }
         const res = await goodsApi.getGoodsList(params)
         
         // 根据后端实际返回格式调整数据处理
+        // 假设后端返回格式为 { code: 200, data: { records: [], total: 0 } }
         if (res && res.code === 200) {
           if (res.data && res.data.records) {
             this.goodsList = res.data.records
             this.total = res.data.total || 0
           } else if (res.data && Array.isArray(res.data)) {
+            // 如果直接返回数组
             this.goodsList = res.data
             this.total = res.data.length
           } else {
@@ -298,6 +300,7 @@ export default {
             this.total = 0
           }
         } else {
+          // 兼容没有code的返回格式
           if (res && res.records) {
             this.goodsList = res.records
             this.total = res.total || 0

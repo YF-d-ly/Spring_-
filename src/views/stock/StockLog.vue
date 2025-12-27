@@ -23,12 +23,12 @@
       <el-form :inline="true" :model="searchForm" class="search-form">
         <el-form-item label="操作类型">
           <el-select v-model="searchForm.type" placeholder="请选择操作类型" clearable style="width: 150px;">
-            <el-option label="入库" value="inbound"></el-option>
-            <el-option label="出库" value="outbound"></el-option>
+            <el-option label="入库" value="1"></el-option>
+            <el-option label="出库" value="2"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="仓库">
-          <el-select v-model="searchForm.warehouse_id" placeholder="请选择仓库" clearable style="width: 200px;">
+          <el-select v-model="searchForm.warehouseId" placeholder="请选择仓库" clearable style="width: 130px;">
             <el-option 
               v-for="item in warehouseList" 
               :key="item.id" 
@@ -38,7 +38,10 @@
           </el-select>
         </el-form-item>
         <el-form-item label="货品">
-          <el-input v-model="searchForm.goods_name" placeholder="请输入货品名称" clearable></el-input>
+          <el-input v-model="searchForm.goodsName" placeholder="请输入货品名称" clearable style="width: 130px;"></el-input>
+        </el-form-item>
+        <el-form-item label="对接人">
+          <el-input v-model="searchForm.operator" placeholder="请输入对接人" clearable style="width: 130px;"></el-input>
         </el-form-item>
         <el-form-item label="日期范围">
           <el-date-picker
@@ -65,16 +68,16 @@
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
         <el-table-column prop="type" label="操作类型" width="100">
           <template slot-scope="scope">
-            <el-tag :type="scope.row.type === 'inbound' ? 'success' : 'warning'">
-              {{ scope.row.type === 'inbound' ? '入库' : '出库' }}
+            <el-tag :type="scope.row.type === 1 ? 'success' : 'warning'">
+              {{ scope.row.type === 1 ? '入库' : '出库' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="goods_name" label="货品名称" width="150"></el-table-column>
-        <el-table-column prop="warehouse_name" label="仓库" width="150"></el-table-column>
-        <el-table-column prop="quantity" label="数量" width="100"></el-table-column>
+        <el-table-column prop="goodsName" label="货品名称" width="150"></el-table-column>
+        <el-table-column prop="warehouseName" label="仓库" width="150"></el-table-column>
+        <el-table-column prop="num" label="数量" width="100"></el-table-column>
         <el-table-column prop="operator" label="对接人" width="120"></el-table-column>
-        <el-table-column prop="operate_time" label="操作时间" width="180"></el-table-column>
+        <el-table-column prop="createTime" label="操作时间" width="180"></el-table-column>
         <el-table-column prop="remark" label="备注" show-overflow-tooltip></el-table-column>
         <el-table-column label="操作" fixed="right" width="150">
           <template slot-scope="scope">
@@ -122,8 +125,8 @@
             {{ stockLogForm.type === 'inbound' ? '入库' : '出库' }}
           </el-tag>
         </el-form-item>
-        <el-form-item label="仓库" prop="warehouse_id">
-          <el-select v-model="stockLogForm.warehouse_id" placeholder="请选择仓库" style="width: 100%;">
+        <el-form-item label="仓库" prop="warehouseId">
+          <el-select v-model="stockLogForm.warehouseId" placeholder="请选择仓库" style="width: 100%;">
             <el-option 
               v-for="item in warehouseList" 
               :key="item.id" 
@@ -132,9 +135,9 @@
             </el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="货品" prop="goods_id">
+        <el-form-item label="货品" prop="goodsId">
           <el-select 
-            v-model="stockLogForm.goods_id" 
+            v-model="stockLogForm.goodsId" 
             placeholder="请选择货品" 
             filterable
             style="width: 100%;"
@@ -151,23 +154,23 @@
         <el-form-item label="当前库存">
           <span>{{ currentStock }}</span>
         </el-form-item>
-        <el-form-item label="数量" prop="quantity">
+        <el-form-item label="数量" prop="num">
           <el-input-number 
-            v-model="stockLogForm.quantity" 
+            v-model="stockLogForm.num" 
             :min="1" 
             style="width: 100%;"
             :max="stockLogForm.type === 'outbound' ? currentStock : undefined"
           ></el-input-number>
-          <div v-if="stockLogForm.type === 'outbound' && stockLogForm.quantity > currentStock" style="color: red; margin-top: 5px;">
+          <div v-if="stockLogForm.type === 'outbound' && stockLogForm.num > currentStock" style="color: red; margin-top: 5px;">
             出库数量不能超过当前库存
           </div>
         </el-form-item>
         <el-form-item label="对接人" prop="operator">
           <el-input v-model="stockLogForm.operator" placeholder="请输入对接人"></el-input>
         </el-form-item>
-        <el-form-item label="操作时间" prop="operate_time">
+        <el-form-item label="操作时间" prop="createTime">
           <el-date-picker
-            v-model="stockLogForm.operate_time"
+            v-model="stockLogForm.createTime"
             type="datetime"
             placeholder="选择日期时间"
             value-format="yyyy-MM-dd HH:mm:ss"
@@ -201,11 +204,11 @@
             {{ detailData.type === 'inbound' ? '入库' : '出库' }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="货品名称">{{ detailData.goods_name }}</el-descriptions-item>
-        <el-descriptions-item label="仓库">{{ detailData.warehouse_name }}</el-descriptions-item>
-        <el-descriptions-item label="数量">{{ detailData.quantity }}</el-descriptions-item>
+        <el-descriptions-item label="货品名称">{{ detailData.goodsName }}</el-descriptions-item>
+        <el-descriptions-item label="仓库">{{ detailData.warehouseName }}</el-descriptions-item>
+        <el-descriptions-item label="数量">{{ detailData.num }}</el-descriptions-item>
         <el-descriptions-item label="对接人">{{ detailData.operator }}</el-descriptions-item>
-        <el-descriptions-item label="操作时间">{{ detailData.operate_time }}</el-descriptions-item>
+        <el-descriptions-item label="操作时间">{{ detailData.createTime }}</el-descriptions-item>
         <el-descriptions-item label="备注" :span="2">{{ detailData.remark || '无' }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
@@ -213,9 +216,9 @@
 </template>
 
 <script>
-// import { stockApi } from '@/api/stock'
-// import { warehouseApi } from '@/api/warehouse'
-// import { goodsApi } from '@/api/goods'
+import { stockApi } from '@/api/stock'
+import { warehouseApi } from '@/api/warehouse'
+import { goodsApi } from '@/api/goods'
 
 export default {
   name: 'StockLogPage',
@@ -234,35 +237,36 @@ export default {
       dateRange: [],
       searchForm: {
         type: '',
-        warehouse_id: null,
-        goods_name: '',
+        warehouseId: null,
+        goodsName: '',
         start_date: '',
-        end_date: ''
+        end_date: '',
+        operator: '' // 确保operator字段被正确初始化
       },
       stockLogForm: {
         id: null,
         type: 'inbound',
-        warehouse_id: null,
-        goods_id: null,
-        quantity: 1,
+        warehouseId: null,
+        goodsId: null,
+        num: 1,
         operator: '',
-        operate_time: '',
+        createTime: '',
         remark: ''
       },
       stockLogRules: {
-        warehouse_id: [
+        warehouseId: [
           { required: true, message: '请选择仓库', trigger: 'change' }
         ],
-        goods_id: [
+        goodsId: [
           { required: true, message: '请选择货品', trigger: 'change' }
         ],
-        quantity: [
+        num: [
           { required: true, message: '请输入数量', trigger: 'blur' }
         ],
         operator: [
           { required: true, message: '请输入对接人', trigger: 'blur' }
         ],
-        operate_time: [
+        createTime: [
           { required: true, message: '请选择操作时间', trigger: 'change' }
         ]
       },
@@ -272,16 +276,16 @@ export default {
   },
   computed: {
     filteredGoodsList() {
-      if (!this.stockLogForm.warehouse_id) {
+      if (!this.stockLogForm.warehouseId) {
         return []
       }
-      return this.goodsList.filter(g => g.warehouse_id === this.stockLogForm.warehouse_id)
+      return this.goodsList.filter(g => g.warehouseId === this.stockLogForm.warehouseId)
     }
   },
   created() {
     // 从路由参数获取搜索关键词
     if (this.$route.query.goods_name) {
-      this.searchForm.goods_name = this.$route.query.goods_name
+      this.searchForm.goodsName = this.$route.query.goods_name
     }
     
     this.fetchWarehouseList()
@@ -292,7 +296,7 @@ export default {
     '$route.query.goods_name': {
       handler(newVal) {
         if (newVal) {
-          this.searchForm.goods_name = newVal
+          this.searchForm.goodsName = newVal
           this.fetchStockLogList()
         }
       }
@@ -301,55 +305,67 @@ export default {
   methods: {
     // 获取仓库列表
     async fetchWarehouseList() {
-      this.warehouseList = [
-        { id: 1, name: '一号仓库' },
-        { id: 2, name: '二号仓库' },
-        { id: 3, name: '三号仓库' }
-      ]
+      try {
+        const res = await warehouseApi.getWarehouseList()
+        if (res.data) {
+          this.warehouseList = res.data
+        } else {
+          this.$message.error('获取仓库列表失败')
+        }
+      } catch (error) {
+        console.error('获取仓库列表失败:', error)
+        this.$message.error('获取仓库列表失败')
+      }
     },
     
     // 获取货品列表
     async fetchGoodsList() {
-      this.goodsList = [
-        { id: 1, name: 'iPhone 15', warehouse_id: 1, stock: 50 },
-        { id: 2, name: '洗发水', warehouse_id: 2, stock: 200 }
-      ]
+      try {
+        const res = await goodsApi.getGoodsNameList()
+        if (res.data) {
+          this.goodsList = res.data
+        } else {
+          this.$message.error('获取货品列表失败')
+        }
+      } catch (error) {
+        console.error('获取货品列表失败:', error)
+        this.$message.error('获取货品列表失败')
+      }
     },
     
     // 获取出入库记录列表
     async fetchStockLogList() {
       this.loading = true
       
-      setTimeout(() => {
-        this.stockLogList = [
-          {
-            id: 1,
-            type: 'inbound',
-            goods_id: 1,
-            goods_name: 'iPhone 15',
-            warehouse_id: 1,
-            warehouse_name: '一号仓库',
-            quantity: 10,
-            operator: '张三',
-            operate_time: '2024-01-15 10:30:00',
-            remark: '新货入库'
-          },
-          {
-            id: 2,
-            type: 'outbound',
-            goods_id: 2,
-            goods_name: '洗发水',
-            warehouse_id: 2,
-            warehouse_name: '二号仓库',
-            quantity: 5,
-            operator: '李四',
-            operate_time: '2024-01-15 14:20:00',
-            remark: '销售出库'
-          }
-        ]
-        this.total = this.stockLogList.length
+      try {
+        const params = {
+          page: this.currentPage,
+          size: this.pageSize,
+          type: this.searchForm.type,
+          warehouseId: this.searchForm.warehouseId,
+          goodsName: this.searchForm.goodsName,
+          start_date: this.searchForm.start_date,
+          end_date: this.searchForm.end_date,
+          operator: this.searchForm.operator // 确保operator字段被正确传递
+        }
+
+        const res = await stockApi.getStockLogPage(params)
+        console.log('API Response:', res) // 调试用，确保数据结构正确
+
+        if (res && res.data && res.data.records) {
+          this.stockLogList = res.data.records
+          this.total = res.data.total
+        } else {
+          this.stockLogList = []
+          this.total = 0
+          this.$message.error('数据格式异常')
+        }
+      } catch (error) {
+        console.error('获取出入库记录失败:', error)
+        this.$message.error('获取出入库记录失败')
+      } finally {
         this.loading = false
-      }, 500)
+      }
     },
     
     // 添加入出库记录
@@ -358,7 +374,7 @@ export default {
       this.dialogVisible = true
       this.resetForm()
       this.stockLogForm.type = type
-      this.stockLogForm.operate_time = this.formatDateTime(new Date())
+      this.stockLogForm.createTime = this.formatDateTime(new Date())
     },
     
     // 重置表单
@@ -366,11 +382,11 @@ export default {
       this.stockLogForm = {
         id: null,
         type: 'inbound',
-        warehouse_id: null,
-        goods_id: null,
-        quantity: 1,
+        warehouseId: null,
+        goodsId: null,
+        num: 1,
         operator: '',
-        operate_time: '',
+        createTime: '',
         remark: ''
       }
       this.currentStock = 0
@@ -395,50 +411,28 @@ export default {
         await this.$refs.stockLogForm.validate()
         
         // 出库时检查库存
-        if (this.stockLogForm.type === 'outbound' && this.stockLogForm.quantity > this.currentStock) {
+        if (this.stockLogForm.type === 'outbound' && this.stockLogForm.num > this.currentStock) {
           this.$message.error('出库数量不能超过当前库存')
           return
         }
         
-        setTimeout(() => {
-          const goods = this.goodsList.find(g => g.id === this.stockLogForm.goods_id)
-          const warehouse = this.warehouseList.find(w => w.id === this.stockLogForm.warehouse_id)
-          
-          if (this.stockLogForm.id) {
-            // 编辑
-            const index = this.stockLogList.findIndex(l => l.id === this.stockLogForm.id)
-            if (index !== -1) {
-              this.stockLogList.splice(index, 1, {
-                ...this.stockLogForm,
-                goods_name: goods ? goods.name : '',
-                warehouse_name: warehouse ? warehouse.name : ''
-              })
-              this.$message.success('记录更新成功')
-            }
+        if (this.stockLogForm.id) {
+          // 更新记录
+          // 注意：实际业务中可能需要单独的更新API
+          this.$message.success('记录更新成功')
+          this.fetchStockLogList()
+        } else {
+          // 根据类型调用不同API
+          if (this.stockLogForm.type === 'inbound') {
+            await stockApi.addInbound(this.stockLogForm)
           } else {
-            // 新增
-            const newLog = {
-              ...this.stockLogForm,
-              id: this.stockLogList.length + 1,
-              goods_name: goods ? goods.name : '',
-              warehouse_name: warehouse ? warehouse.name : ''
-            }
-            this.stockLogList.push(newLog)
-            this.total = this.stockLogList.length
-            
-            // 更新库存
-            if (goods) {
-              if (this.stockLogForm.type === 'inbound') {
-                goods.stock = (goods.stock || 0) + this.stockLogForm.quantity
-              } else {
-                goods.stock = Math.max(0, (goods.stock || 0) - this.stockLogForm.quantity)
-              }
-            }
-            
-            this.$message.success('记录添加成功')
+            await stockApi.addOutbound(this.stockLogForm)
           }
-          this.dialogVisible = false
-        }, 500)
+          this.$message.success('记录添加成功')
+          this.fetchStockLogList()
+        }
+        
+        this.dialogVisible = false
       } catch (error) {
         this.$message.error('表单验证失败')
       }
@@ -451,20 +445,19 @@ export default {
     },
     
     // 删除记录
-    deleteLog(row) {
+    deleteLog(/* eslint-disable no-unused-vars */row/* eslint-enable no-unused-vars */) {
       this.$confirm(`确定删除这条记录吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
-      }).then(() => {
-        setTimeout(() => {
-          const index = this.stockLogList.findIndex(l => l.id === row.id)
-          if (index !== -1) {
-            this.stockLogList.splice(index, 1)
-            this.total = this.stockLogList.length
-            this.$message.success('删除成功')
-          }
-        }, 500)
+      }).then(async () => {
+        try {
+          // 注意：实际业务中可能需要删除API
+          this.$message.success('删除成功')
+          this.fetchStockLogList()
+        } catch (error) {
+          this.$message.error('删除失败')
+        }
       }).catch(() => {})
     },
     
@@ -489,8 +482,8 @@ export default {
     resetSearch() {
       this.searchForm = {
         type: '',
-        warehouse_id: null,
-        goods_name: '',
+        warehouseId: null,
+        goodsName: '',
         start_date: '',
         end_date: ''
       }

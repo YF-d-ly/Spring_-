@@ -1,4 +1,3 @@
-// 库存相关API
 import service from './index'
 
 export const stockApi = {
@@ -6,6 +5,14 @@ export const stockApi = {
   getStockLogList(params) {
     return service({
       url: '/stock/log/list',
+      method: 'get',
+      params
+    })
+  },
+  // 获取出入库记录分页
+  getStockLogPage(params) {
+    return service({
+      url: '/stock/log/page',
       method: 'get',
       params
     })
@@ -35,4 +42,3 @@ export const stockApi = {
     })
   }
 }
-

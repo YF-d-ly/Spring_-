@@ -19,9 +19,7 @@
       >
         <el-table-column prop="id" label="ID" width="80"></el-table-column>
         <el-table-column prop="name" label="类别名称" width="200"></el-table-column>
-        <el-table-column prop="code" label="类别编码" width="150"></el-table-column>
         <el-table-column prop="description" label="描述"></el-table-column>
-        <el-table-column prop="sort_order" label="排序" width="100"></el-table-column>
         <el-table-column label="操作" fixed="right" width="200">
           <template slot-scope="scope">
             <el-button size="mini" @click="editCategory(scope.row)">编辑</el-button>
@@ -53,12 +51,12 @@
         <el-form-item label="类别名称" prop="name">
           <el-input v-model="categoryForm.name" placeholder="请输入类别名称"></el-input>
         </el-form-item>
-        <el-form-item label="类别编码" prop="code">
+        <!-- <el-form-item label="类别编码" prop="code">
           <el-input v-model="categoryForm.code" placeholder="请输入类别编码"></el-input>
-        </el-form-item>
-        <el-form-item label="排序" prop="sort_order">
+        </el-form-item> -->
+        <!-- <el-form-item label="排序" prop="sort_order">
           <el-input-number v-model="categoryForm.sort_order" :min="0" :max="999"></el-input-number>
-        </el-form-item>
+        </el-form-item> -->
         <el-form-item label="描述" prop="description">
           <el-input 
             type="textarea" 
@@ -77,7 +75,7 @@
 </template>
 
 <script>
-// import { goodsApi } from '@/api/goods'
+import { categoryApi } from '@/api/category'
 
 export default {
   name: 'CategoryListPage',
@@ -112,26 +110,26 @@ export default {
     async fetchCategoryList() {
       this.loading = true
       
-      // 模拟API调用
-      setTimeout(() => {
-        this.categoryList = [
-          { id: 1, name: '电子产品', code: 'ELEC', description: '各类电子产品', sort_order: 1 },
-          { id: 2, name: '日用品', code: 'DAILY', description: '日常生活用品', sort_order: 2 },
-          { id: 3, name: '食品', code: 'FOOD', description: '各类食品', sort_order: 3 },
-          { id: 4, name: '服装', code: 'CLOTH', description: '各类服装', sort_order: 4 }
-        ]
-        this.loading = false
-      }, 500)
-      
-      // 实际项目中应该调用API
-      // try {
-      //   const res = await goodsApi.getCategoryList()
-      //   this.categoryList = res.data
-      // } catch (error) {
-      //   this.$message.error('获取类别列表失败')
-      // } finally {
+      // // 模拟API调用
+      // setTimeout(() => {
+      //   this.categoryList = [
+      //     { id: 1, name: '电子产品', code: 'ELEC', description: '各类电子产品', sort_order: 1 },
+      //     { id: 2, name: '日用品', code: 'DAILY', description: '日常生活用品', sort_order: 2 },
+      //     { id: 3, name: '食品', code: 'FOOD', description: '各类食品', sort_order: 3 },
+      //     { id: 4, name: '服装', code: 'CLOTH', description: '各类服装', sort_order: 4 }
+      //   ]
       //   this.loading = false
-      // }
+      // }, 500)
+      
+      //实际项目中应该调用API
+      try {
+        const res = await categoryApi.getCategoryList()
+        this.categoryList = res.data
+      } catch (error) {
+        this.$message.error('获取类别列表失败')
+      } finally {
+        this.loading = false
+      }
     },
     
     // 添加类别

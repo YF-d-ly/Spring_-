@@ -2,6 +2,14 @@
 import service from './index'
 
 export const goodsApi = {
+
+    // 获取货品列表
+    getGoodsNameList() {
+        return service({
+            url: '/goods/list',
+            method: 'get'
+        })
+    },
     // 获取货品列表（分页）
     getGoodsList(params) {
         return service({
