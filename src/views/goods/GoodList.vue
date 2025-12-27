@@ -18,7 +18,7 @@
           <el-input v-model="searchForm.name" placeholder="请输入货品名称" clearable></el-input>
         </el-form-item>
         <el-form-item label="类别">
-          <el-select v-model="searchForm.category_id" placeholder="请选择类别" clearable style="width: 200px;">
+          <el-select v-model="searchForm.categoryId" placeholder="请选择类别" clearable style="width: 200px;">
             <el-option 
               v-for="item in categoryList" 
               :key="item.id" 
@@ -28,7 +28,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="仓库">
-          <el-select v-model="searchForm.warehouse_id" placeholder="请选择仓库" clearable style="width: 200px;">
+          <el-select v-model="searchForm.warehouseId" placeholder="请选择仓库" clearable style="width: 200px;">
             <el-option 
               v-for="item in warehouseList" 
               :key="item.id" 
@@ -116,8 +116,8 @@
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="类别" prop="category_id">
-              <el-select v-model="goodsForm.category_id" placeholder="请选择类别" style="width: 100%;">
+            <el-form-item label="类别" prop="categoryId">
+              <el-select v-model="goodsForm.categoryId" placeholder="请选择类别" style="width: 100%;">
                 <el-option 
                   v-for="item in categoryList" 
                   :key="item.id" 
@@ -128,8 +128,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="所属仓库" prop="warehouse_id">
-              <el-select v-model="goodsForm.warehouse_id" placeholder="请选择仓库" style="width: 100%;">
+            <el-form-item label="所属仓库" prop="warehouseId">
+              <el-select v-model="goodsForm.warehouseId" placeholder="请选择仓库" style="width: 100%;">
                 <el-option 
                   v-for="item in warehouseList" 
                   :key="item.id" 
@@ -186,7 +186,8 @@
 
 <script>
 import { goodsApi } from '@/api/goods'
-// import { warehouseApi } from '@/api/warehouse'
+import { categoryApi } from '@/api/category'
+import { warehouseApi } from '@/api/warehouse'  // 新增导入仓库API
 
 export default {
   name: 'GoodListPage',
@@ -203,14 +204,14 @@ export default {
       total: 0,
       searchForm: {
         name: '',
-        category_id: null,
-        warehouse_id: null
+        categoryId: null, // 修改为驼峰命名
+        warehouseId: null // 修改为驼峰命名
       },
       goodsForm: {
         id: null,
         name: '',
-        category_id: null,
-        warehouse_id: null,
+        categoryId: null, // 修改为驼峰命名
+        warehouseId: null, // 修改为驼峰命名
         price: 0,
         stock: 0,
         image: '',
@@ -220,10 +221,10 @@ export default {
         name: [
           { required: true, message: '请输入货品名称', trigger: 'blur' }
         ],
-        category_id: [
+        categoryId: [ // 修改为驼峰命名
           { required: true, message: '请选择类别', trigger: 'change' }
         ],
-        warehouse_id: [
+        warehouseId: [ // 修改为驼峰命名
           { required: true, message: '请选择仓库', trigger: 'change' }
         ],
         price: [
@@ -243,23 +244,32 @@ export default {
   methods: {
     // 获取类别列表
     async fetchCategoryList() {
-      // 模拟数据
-      this.categoryList = [
-        { id: 1, name: '电子产品', code: 'ELEC' },
-        { id: 2, name: '日用品', code: 'DAILY' },
-        { id: 3, name: '食品', code: 'FOOD' },
-        { id: 4, name: '服装', code: 'CLOTH' }
-      ]
+      try {
+        const res = await categoryApi.getCategoryList()
+        if (res && res.code === 200) {
+          this.categoryList = res.data || []
+        } else {
+          this.$message.error('获取类别列表失败')
+        }
+      } catch (error) {
+        console.error('获取类别列表失败:', error)
+        this.$message.error('获取类别列表失败')
+      }
     },
     
     // 获取仓库列表
     async fetchWarehouseList() {
-      // 模拟数据
-      this.warehouseList = [
-        { id: 1, name: '一号仓库' },
-        { id: 2, name: '二号仓库' },
-        { id: 3, name: '三号仓库' }
-      ]
+      try {
+        const res = await warehouseApi.getWarehouseList()  // 修改为使用 warehouseApi
+        if (res && res.code === 200) {  // 修复语法错误：将 20:0 改为 200
+          this.warehouseList = res.data || []
+        } else {
+          this.$message.error('获取仓库列表失败')
+        }
+      } catch (error) {
+        console.error('获取仓库列表失败:', error)
+        this.$message.error('获取仓库列表失败')
+      }
     },
     
     // 获取货品列表
@@ -268,21 +278,19 @@ export default {
       try {
         const params = {
           page: this.currentPage,
-          size: this.pageSize,  // 将limit改为size
+          size: this.pageSize,
           name: this.searchForm.name,
-          category_id: this.searchForm.category_id,
-          warehouse_id: this.searchForm.warehouse_id
+          categoryId: this.searchForm.categoryId, // 修改为驼峰命名
+          warehouseId: this.searchForm.warehouseId // 修改为驼峰命名
         }
         const res = await goodsApi.getGoodsList(params)
         
         // 根据后端实际返回格式调整数据处理
-        // 假设后端返回格式为 { code: 200, data: { records: [], total: 0 } }
         if (res && res.code === 200) {
           if (res.data && res.data.records) {
             this.goodsList = res.data.records
             this.total = res.data.total || 0
           } else if (res.data && Array.isArray(res.data)) {
-            // 如果直接返回数组
             this.goodsList = res.data
             this.total = res.data.length
           } else {
@@ -290,7 +298,6 @@ export default {
             this.total = 0
           }
         } else {
-          // 兼容没有code的返回格式
           if (res && res.records) {
             this.goodsList = res.records
             this.total = res.total || 0

@@ -32,5 +32,6 @@ export const goodsApi = {
             url: `/goods/delete/${id}`,
             method: 'delete'
         })
-    }
+    },
+
 }
