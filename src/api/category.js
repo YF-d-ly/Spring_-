@@ -14,5 +14,8 @@ export const categoryApi = {
             url: '/category/list',
             method: 'get'
         })
-    }
+    },
+
+
+    // 添加类别
 }

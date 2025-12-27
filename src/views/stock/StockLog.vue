@@ -144,9 +144,9 @@
             @change="handleGoodsChange"
           >
             <el-option 
-              v-for="item in filteredGoodsList" 
+              v-for="item in goodsList" 
               :key="item.id" 
-              :label="item.name" 
+              :label="item.name"
               :value="item.id">
             </el-option>
           </el-select>
@@ -279,6 +279,11 @@ export default {
       if (!this.stockLogForm.warehouseId) {
         return []
       }
+      // 确保 goodsList 是数组类型
+      if (!Array.isArray(this.goodsList)) {
+        return []
+      }
+      // 过滤出当前仓库的货品
       return this.goodsList.filter(g => g.warehouseId === this.stockLogForm.warehouseId)
     }
   },
@@ -307,7 +312,7 @@ export default {
     async fetchWarehouseList() {
       try {
         const res = await warehouseApi.getWarehouseList()
-        if (res.data) {
+        if (res.data && Array.isArray(res.data)) {
           this.warehouseList = res.data
         } else {
           this.$message.error('获取仓库列表失败')
@@ -322,7 +327,8 @@ export default {
     async fetchGoodsList() {
       try {
         const res = await goodsApi.getGoodsNameList()
-        if (res.data) {
+        // 确保 res.data 是数组类型
+        if (res.data && Array.isArray(res.data)) {
           this.goodsList = res.data
         } else {
           this.$message.error('获取货品列表失败')
@@ -399,10 +405,20 @@ export default {
     
     // 货品选择变化
     handleGoodsChange(goodsId) {
-      const goods = this.goodsList.find(g => g.id === goodsId)
-      if (goods) {
-        this.currentStock = goods.stock || 0
-      }
+        // 添加安全检查，防止undefined或null导致错误
+        if (!goodsId) {
+            this.currentStock = 0;
+            return;
+        }
+        
+        const goods = this.goodsList.find(g => g.id === goodsId);
+        if (goods && typeof goods.stock !== 'undefined') {
+            this.currentStock = goods.stock || 0; // 更新当前库存显示
+        } else {
+            // 如果找不到货品或没有stock字段，设为0并提示
+            this.currentStock = 0;
+            console.warn('货品数据中缺少stock字段或未找到对应货品');
+        }
     },
     
     // 保存出入库记录

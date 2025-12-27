@@ -245,7 +245,7 @@ export default {
     // 获取类别列表
     async fetchCategoryList() {
       try {
-        const res = await categoryApi.getCategoryList()
+        const res = await categoryApi.getCategoryNameList()
         if (res && res.code === 200) {
           this.categoryList = res.data || []
         } else {

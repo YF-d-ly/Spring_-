@@ -41,5 +41,12 @@ export const goodsApi = {
             method: 'delete'
         })
     },
+    // 获取货品库存
+    getGoodsStock(goodsId) {
+        return service({
+            url: `/goods/stock/${goodsId}`,
+            method: 'get'
+        })
+    },
 
 }
