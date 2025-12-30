@@ -43,9 +43,9 @@
             @change="handleGoodsChange"
           >
             <el-option 
-              v-for="item in fromGoodsList" 
+              v-for="item in goodsList" 
               :key="item.id" 
-              :label="`${item.name} (库存: ${item.stock})`" 
+              :label="`${item.name}` " 
               :value="item.id">
             </el-option>
           </el-select>
@@ -108,8 +108,10 @@
         <el-table-column prop="goods_name" label="货品名称" width="150"></el-table-column>
         <el-table-column prop="from_warehouse_name" label="源仓库" width="150"></el-table-column>
         <el-table-column prop="to_warehouse_name" label="目标仓库" width="150"></el-table-column>
-        <el-table-column prop="quantity" label="数量" width="100"></el-table-column>
-        <el-table-column prop="operator" label="对接人" width="120"></el-table-column>
+        <el-table-column prop="outquantity" label="出库数量" width="100"></el-table-column>
+        <el-table-column prop="inquantity" label="入库数量" width="100"></el-table-column>
+        <el-table-column prop="outboundOperator" label="出库对接人" width="120"></el-table-column>
+        <el-table-column prop="inboundOperator" label="入库对接人" width="120"></el-table-column>
         <el-table-column prop="transfer_time" label="调货时间" width="180"></el-table-column>
         <el-table-column prop="remark" label="备注" show-overflow-tooltip></el-table-column>
       </el-table>
@@ -130,9 +132,9 @@
 </template>
 
 <script>
-// import { stockApi } from '@/api/stock'
-// import { warehouseApi } from '@/api/warehouse'
-// import { goodsApi } from '@/api/goods'
+import { stockApi } from '@/api/stock'
+import { warehouseApi } from '@/api/warehouse'
+import { goodsApi } from '@/api/goods'
 
 export default {
   name: 'TransferGoodsPage',
@@ -194,58 +196,87 @@ export default {
   },
   created() {
     this.fetchWarehouseList()
-    this.fetchGoodsList()
     this.fetchTransferList()
     this.transferForm.transfer_time = this.formatDateTime(new Date())
   },
   methods: {
     // 获取仓库列表
     async fetchWarehouseList() {
-      this.warehouseList = [
-        { id: 1, name: '一号仓库' },
-        { id: 2, name: '二号仓库' },
-        { id: 3, name: '三号仓库' }
-      ]
+      try {
+        const res = await warehouseApi.getWarehouseList()
+        if (res.data && Array.isArray(res.data)) {
+          this.warehouseList = res.data
+        } else {
+          this.$message.error('获取仓库列表失败')
+        }
+      } catch (error) {
+        console.error('获取仓库列表失败:', error)
+        this.$message.error('获取仓库列表失败')
+      }
     },
     
-    // 获取货品列表
+    // 获取货品列表 - 根据仓库ID获取
     async fetchGoodsList() {
-      this.goodsList = [
-        { id: 1, name: 'iPhone 15', warehouse_id: 1, stock: 50 },
-        { id: 2, name: '洗发水', warehouse_id: 2, stock: 200 },
-        { id: 3, name: '笔记本电脑', warehouse_id: 1, stock: 30 }
-      ]
+      try {
+        if (!this.transferForm.from_warehouse_id) {
+          this.goodsList = []
+          return
+        }
+        
+        // 修改API调用路径以匹配后端接口
+        const res = await goodsApi.getGoodsByWarehouse(this.transferForm.from_warehouse_id)
+        if (res.data && Array.isArray(res.data)) {
+          this.goodsList = res.data
+        } else {
+          this.$message.error('获取货品列表失败')
+        }
+      } catch (error) {
+        console.error('获取货品列表失败:', error)
+        this.$message.error('获取货品列表失败')
+      }
     },
     
     // 获取调货记录列表
     async fetchTransferList() {
       this.loading = true
       
-      setTimeout(() => {
-        this.transferList = [
-          {
-            id: 1,
-            goods_id: 1,
-            goods_name: 'iPhone 15',
-            from_warehouse_id: 1,
-            from_warehouse_name: '一号仓库',
-            to_warehouse_id: 2,
-            to_warehouse_name: '二号仓库',
-            quantity: 10,
-            operator: '张三',
-            transfer_time: '2024-01-15 16:00:00',
-            remark: '调货补充'
-          }
-        ]
-        this.total = this.transferList.length
+      try {
+        const res = await warehouseApi.getTransferLog()
+        if (res.data && Array.isArray(res.data)) {
+          // 转换后端返回的数据格式
+          this.transferList = res.data.map(item => ({
+            id: item.transferId,
+            goods_id: item.goodsId,
+            goods_name: item.goodsName,
+            from_warehouse_id: item.sourceWarehouseId,
+            from_warehouse_name: item.outboundWarehouseName,
+            to_warehouse_id: item.targetWarehouseId,
+            to_warehouse_name: item.inboundWarehouseName,
+            inquantity: item.inboundNum,
+            outquantity: item.outboundNum,
+            outboundOperator: item.outboundOperator,
+            inboundOperator: item.inboundOperator,
+            transfer_time: item.outboundTime,
+            remark: item.remark
+          }))
+          this.total = this.transferList.length
+        } else {
+          this.$message.error('获取调货记录失败')
+        }
+      } catch (error) {
+        console.error('获取调货记录失败:', error)
+        this.$message.error('获取调货记录失败')
+      } finally {
         this.loading = false
-      }, 500)
+      }
     },
     
     // 源仓库变化
     handleFromWarehouseChange() {
       this.transferForm.goods_id = null
       this.fromStock = 0
+      // 在源仓库变化时重新获取货品列表
+      this.fetchGoodsList()
     },
     
     // 目标仓库变化
@@ -259,7 +290,7 @@ export default {
     
     // 货品选择变化
     handleGoodsChange(goodsId) {
-      const goods = this.goodsList.find(g => g.id === goodsId && g.warehouse_id === this.transferForm.from_warehouse_id)
+      const goods = this.goodsList.find(g => g.id === goodsId)
       if (goods) {
         this.fromStock = goods.stock || 0
         if (this.transferForm.quantity > this.fromStock) {
@@ -267,7 +298,7 @@ export default {
         }
       }
     },
-    
+
     // 提交调货
     async submitTransfer() {
       try {
@@ -283,48 +314,36 @@ export default {
           return
         }
         
-        setTimeout(() => {
-          const goods = this.goodsList.find(g => g.id === this.transferForm.goods_id)
-          const fromWarehouse = this.warehouseList.find(w => w.id === this.transferForm.from_warehouse_id)
-          const toWarehouse = this.warehouseList.find(w => w.id === this.transferForm.to_warehouse_id)
-          
-          // 添加调货记录
-          const newTransfer = {
-            ...this.transferForm,
-            id: this.transferList.length + 1,
-            goods_name: goods ? goods.name : '',
-            from_warehouse_name: fromWarehouse ? fromWarehouse.name : '',
-            to_warehouse_name: toWarehouse ? toWarehouse.name : ''
-          }
-          this.transferList.push(newTransfer)
-          this.total = this.transferList.length
-          
-          // 更新库存：源仓库减少，目标仓库增加
-          if (goods) {
-            // 源仓库减少
-            goods.stock = Math.max(0, (goods.stock || 0) - this.transferForm.quantity)
-            
-            // 目标仓库增加（如果目标仓库已有该货品）
-            const toGoods = this.goodsList.find(g => g.id === this.transferForm.goods_id && g.warehouse_id === this.transferForm.to_warehouse_id)
-            if (toGoods) {
-              toGoods.stock = (toGoods.stock || 0) + this.transferForm.quantity
-            } else {
-              // 如果目标仓库没有该货品，创建新记录
-              const newGoods = {
-                ...goods,
-                id: this.goodsList.length + 1,
-                warehouse_id: this.transferForm.to_warehouse_id,
-                stock: this.transferForm.quantity
-              }
-              this.goodsList.push(newGoods)
-            }
-          }
-          
-          this.$message.success('调货成功！已自动生成对应的出入库记录')
+        this.submitting = true
+        
+        // 准备调货数据
+        const transferData = {
+          from_warehouse_id: this.transferForm.from_warehouse_id,
+          to_warehouse_id: this.transferForm.to_warehouse_id,
+          goods_id: this.transferForm.goods_id,
+          quantity: this.transferForm.quantity,
+          operator: this.transferForm.operator,
+          transfer_time: this.transferForm.transfer_time,
+          remark: this.transferForm.remark
+        }
+        
+        // 发送调货请求
+        const res = await stockApi.transferGoods(transferData)
+        console.log('调货响应:', res)
+        
+        if (res && (res.code === 0 || res.code === 200)) {
+          this.$message.success('调货成功！')
           this.resetForm()
-        }, 500)
+          // 重新获取调货记录
+          this.fetchTransferList()
+        } else {
+          this.$message.error(res.message || '调货失败')
+        }
       } catch (error) {
-        this.$message.error('表单验证失败')
+        console.error('提交调货失败:', error)
+        this.$message.error('提交调货失败: ' + (error.message || '未知错误'))
+      } finally {
+        this.submitting = false
       }
     },
     
@@ -340,6 +359,7 @@ export default {
         remark: ''
       }
       this.fromStock = 0
+      this.goodsList = []
       this.$nextTick(() => {
         if (this.$refs.transferForm) {
           this.$refs.transferForm.clearValidate()

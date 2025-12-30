@@ -32,6 +32,12 @@ export const warehouseApi = {
       data
     })
   },
-
+  // 获取调货日志
+  getTransferLog() {
+    return service({
+      url: '/stock/transfer/log',
+      method: 'get'
+    })
+  }
 }
 

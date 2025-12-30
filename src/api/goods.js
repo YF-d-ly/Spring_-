@@ -48,5 +48,12 @@ export const goodsApi = {
             method: 'get'
         })
     },
+    // 获取仓库选货物
+    getGoodsByWarehouse(warehouseId) {
+        return service({
+            url: `/goods/select/${warehouseId}`,
+            method: 'get'
+        })
+    },
 
 }
