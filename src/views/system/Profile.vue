@@ -1,110 +1,109 @@
 <template>
-  <div class="profile-page">
-    <el-card>
+  <div class="profile-container">
+    <el-card class="profile-card">
       <div slot="header" class="clearfix">
-        <span>个人信息管理</span>
+        <span>个人信息</span>
       </div>
       
-      <el-tabs v-model="activeTab" type="border-card">
-        <!-- 个人信息标签页 -->
-        <el-tab-pane label="个人信息" name="info">
-          <el-form 
-            :model="profileForm" 
-            :rules="profileRules" 
-            ref="profileForm" 
-            label-width="120px"
-            style="max-width: 600px; margin-top: 20px;"
-          >
-            <el-form-item label="账号名" prop="username">
-              <el-input v-model="profileForm.username" disabled></el-input>
-            </el-form-item>
-            <el-form-item label="用户名" prop="nickname">
-              <el-input v-model="profileForm.nickname" placeholder="请输入用户名"></el-input>
-            </el-form-item>
-            <el-form-item label="角色">
-              <el-tag :type="getRoleTagType(profileForm.role)">
-                {{ getRoleName(profileForm.role) }}
-              </el-tag>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="saveProfile">保存</el-button>
-              <el-button @click="resetProfileForm">重置</el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
+      <el-form 
+        :model="profileForm" 
+        :rules="profileRules" 
+        ref="profileForm" 
+        label-width="100px"
+        class="profile-form"
+      >
+        <el-form-item label="账号名">
+          <el-input v-model="profileForm.username" disabled></el-input>
+        </el-form-item>
         
-        <!-- 修改密码标签页 -->
-        <el-tab-pane label="修改密码" name="password">
-          <el-form 
-            :model="passwordForm" 
-            :rules="passwordRules" 
-            ref="passwordForm" 
-            label-width="120px"
-            style="max-width: 600px; margin-top: 20px;"
-          >
-            <el-form-item label="原密码" prop="oldPassword">
-              <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入原密码"></el-input>
-            </el-form-item>
-            <el-form-item label="新密码" prop="newPassword">
-              <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码"></el-input>
-            </el-form-item>
-            <el-form-item label="确认密码" prop="confirmPassword">
-              <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次输入新密码"></el-input>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="changePassword">修改密码</el-button>
-              <el-button @click="resetPasswordForm">重置</el-button>
-            </el-form-item>
-          </el-form>
-        </el-tab-pane>
-      </el-tabs>
+        <el-form-item label="用户名" prop="nickname">
+          <el-input v-model="profileForm.nickname"></el-input>
+        </el-form-item>
+        
+        <el-form-item label="角色">
+          <el-input :value="getRoleName(profileForm.role)" disabled></el-input>
+        </el-form-item>
+        
+        <el-form-item>
+          <el-button type="primary" @click="updateProfile">更新信息</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+    
+    <el-card class="password-card">
+      <div slot="header" class="clearfix">
+        <span>修改密码</span>
+      </div>
+      
+      <el-form 
+        :model="passwordForm" 
+        :rules="passwordRules" 
+        ref="passwordForm" 
+        label-width="120px"
+        class="password-form"
+      >
+        <el-form-item label="当前密码" prop="oldPassword">
+          <el-input v-model="passwordForm.oldPassword" type="password"></el-input>
+        </el-form-item>
+        
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="passwordForm.newPassword" type="password"></el-input>
+        </el-form-item>
+        
+        <el-form-item label="确认新密码" prop="confirmNewPassword">
+          <el-input v-model="passwordForm.confirmNewPassword" type="password"></el-input>
+        </el-form-item>
+        
+        <el-form-item>
+          <el-button type="primary" @click="changePassword">修改密码</el-button>
+        </el-form-item>
+      </el-form>
     </el-card>
   </div>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
-// import { userApi } from '@/api/user'
+import { userApi } from '@/api/user'
 
 export default {
   name: 'ProfilePage',
   data() {
     // 密码确认验证
-    const validateConfirmPass = (rule, value, callback) => {
+    const validatePass = (rule, value, callback) => {
       if (value !== this.passwordForm.newPassword) {
-        callback(new Error('两次输入密码不一致!'))
+        callback(new Error('两次输入密码不一致!'));
       } else {
-        callback()
+        callback();
       }
-    }
+    };
     
     return {
-      activeTab: 'info',
       profileForm: {
         username: '',
         nickname: '',
         role: ''
+      },
+      passwordForm: {
+        oldPassword: '',
+        newPassword: '',
+        confirmNewPassword: ''
       },
       profileRules: {
         nickname: [
           { required: true, message: '请输入用户名', trigger: 'blur' }
         ]
       },
-      passwordForm: {
-        oldPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      },
       passwordRules: {
         oldPassword: [
-          { required: true, message: '请输入原密码', trigger: 'blur' }
+          { required: true, message: '请输入当前密码', trigger: 'blur' }
         ],
         newPassword: [
           { required: true, message: '请输入新密码', trigger: 'blur' },
-          { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
+          { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
         ],
-        confirmPassword: [
-          { required: true, validator: validateConfirmPass, trigger: 'blur' }
+        confirmNewPassword: [
+          { required: true, validator: validatePass, trigger: 'blur' }
         ]
       }
     }
@@ -113,121 +112,84 @@ export default {
     ...mapGetters('user', ['userInfo'])
   },
   created() {
-    this.loadProfile()
+    this.loadProfile();
   },
   methods: {
-    // 加载个人信息
-    loadProfile() {
-      // 从store获取用户信息
-      if (this.userInfo) {
-        this.profileForm = {
-          username: this.userInfo.username || '',
-          nickname: this.userInfo.nickname || '',
-          role: this.userInfo.role || ''
+    // 加载用户信息
+    async loadProfile() {
+      try {
+        const res = await userApi.getProfile();
+        if (res.code === 200) {
+          this.profileForm = { ...res.data };
+        } else {
+          this.$message.error(res.message || '获取用户信息失败');
         }
+      } catch (error) {
+        console.error('获取用户信息失败:', error);
+        this.$message.error('获取用户信息失败');
       }
-      
-      // 实际项目中应该调用API
-      // userApi.getProfile().then(res => {
-      //   this.profileForm = res.data
-      // })
     },
     
-    // 保存个人信息
-    async saveProfile() {
+    // 更新个人信息
+    async updateProfile() {
       try {
-        await this.$refs.profileForm.validate()
+        await this.$refs.profileForm.validate();
         
-        // 模拟API调用
-        setTimeout(() => {
+        const res = await userApi.updateProfile(this.profileForm);
+        if (res.code === 200) {
+          this.$message.success('个人信息更新成功');
           // 更新store中的用户信息
-          this.$store.commit('user/SET_USER_INFO', {
-            ...this.userInfo,
+          const updatedUserInfo = {
+            ...this.$store.state.user.userInfo,
             nickname: this.profileForm.nickname
-          })
-          this.$message.success('个人信息更新成功')
-        }, 500)
-        
-        // 实际项目中应该调用API
-        // await userApi.updateProfile(this.profileForm)
-        // this.$message.success('个人信息更新成功')
-        // this.loadProfile()
+          };
+          this.$store.commit('user/SET_USER_INFO', updatedUserInfo);
+        } else {
+          this.$message.error(res.message || '更新失败');
+        }
       } catch (error) {
-        this.$message.error('表单验证失败')
+        console.error('更新个人信息失败:', error);
+        this.$message.error('表单验证失败');
       }
     },
     
     // 修改密码
     async changePassword() {
       try {
-        await this.$refs.passwordForm.validate()
+        await this.$refs.passwordForm.validate();
         
-        // 模拟API调用
-        setTimeout(() => {
-          this.$message.success('密码修改成功，请重新登录')
-          this.resetPasswordForm()
-          // 可以选择退出登录
-          // this.$store.dispatch('user/logout')
-          // this.$router.push('/login')
-        }, 500)
+        const data = {
+          oldPassword: this.passwordForm.oldPassword,
+          newPassword: this.passwordForm.newPassword
+        };
         
-        // 实际项目中应该调用API
-        // await userApi.changePassword({
-        //   oldPassword: this.passwordForm.oldPassword,
-        //   newPassword: this.passwordForm.newPassword
-        // })
-        // this.$message.success('密码修改成功，请重新登录')
-        // this.resetPasswordForm()
+        const res = await userApi.changePassword(data);
+        if (res.code === 200) {
+          this.$message.success('密码修改成功');
+          // 重置表单
+          this.passwordForm = {
+            oldPassword: '',
+            newPassword: '',
+            confirmNewPassword: ''
+          };
+        } else {
+          this.$message.error(res.message || '密码修改失败');
+        }
       } catch (error) {
-        this.$message.error('表单验证失败')
+        console.error('修改密码失败:', error);
+        this.$message.error('表单验证失败');
       }
-    },
-    
-    // 重置个人信息表单
-    resetProfileForm() {
-      this.loadProfile()
-      this.$nextTick(() => {
-        if (this.$refs.profileForm) {
-          this.$refs.profileForm.clearValidate()
-        }
-      })
-    },
-    
-    // 重置密码表单
-    resetPasswordForm() {
-      this.passwordForm = {
-        oldPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }
-      this.$nextTick(() => {
-        if (this.$refs.passwordForm) {
-          this.$refs.passwordForm.clearValidate()
-        }
-      })
     },
     
     // 获取角色名称
     getRoleName(role) {
       switch (role) {
         case 'super_admin':
-          return '超级管理员'
+          return '超级管理员';
         case 'info_admin':
-          return '信息管理员'
+          return '信息管理员';
         default:
-          return '普通用户'
-      }
-    },
-    
-    // 获取角色标签类型
-    getRoleTagType(role) {
-      switch (role) {
-        case 'super_admin':
-          return 'danger'
-        case 'info_admin':
-          return 'primary'
-        default:
-          return 'info'
+          return '普通用户';
       }
     }
   }
@@ -235,8 +197,23 @@ export default {
 </script>
 
 <style scoped>
-.profile-page {
-  padding: 20px;
+.profile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-card, .password-card {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.profile-form, .password-form {
+  margin-top: 20px;
+}
+
+.clearfix {
+  font-size: 18px;
+  font-weight: bold;
 }
 </style>
-

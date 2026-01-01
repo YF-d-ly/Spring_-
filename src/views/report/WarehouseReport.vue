@@ -71,8 +71,8 @@
 
 <script>
 import * as echarts from 'echarts'
-// import { reportApi } from '@/api/report'
-// import { warehouseApi } from '@/api/warehouse'
+import { reportApi } from '@/api/report'
+import { warehouseApi } from '@/api/warehouse'
 
 export default {
   name: 'WarehouseReportPage',
@@ -119,11 +119,17 @@ export default {
   methods: {
     // 获取仓库列表
     async fetchWarehouseList() {
-      this.warehouseList = [
-        { id: 1, name: '一号仓库' },
-        { id: 2, name: '二号仓库' },
-        { id: 3, name: '三号仓库' }
-      ]
+      try {
+        const res = await warehouseApi.getWarehouseList()
+        if (res.data && Array.isArray(res.data)) {
+          this.warehouseList = res.data
+        } else {
+          this.$message.error('获取仓库列表失败')
+        }
+      } catch (error) {
+        console.error('获取仓库列表失败:', error)
+        this.$message.error('获取仓库列表失败')
+      }
       
       // 默认选择第一个仓库
       if (this.warehouseList.length > 0) {
@@ -148,54 +154,46 @@ export default {
         this.$message.warning('请先选择仓库')
         return
       }
-      
+
       this.loading = true
-      
-      // 模拟数据
-      setTimeout(() => {
-        // 模拟每日数据
-        const dates = []
-        const inboundData = []
-        const outboundData = []
-        
-        for (let i = 29; i >= 0; i--) {
-          const date = new Date()
-          date.setDate(date.getDate() - i)
-          dates.push(this.formatDate(date))
-          inboundData.push(Math.floor(Math.random() * 50) + 20)
-          outboundData.push(Math.floor(Math.random() * 40) + 15)
+
+      try {
+        // 获取仓库内货物排行数据
+        const rankingRes = await reportApi.getWarehouseGoodsTop10(this.searchForm.warehouse_id)
+        if (rankingRes.data && Array.isArray(rankingRes.data)) {
+          this.rankingList = rankingRes.data.map(item => ({
+            goods_name: item.goodsName,
+            stock: item.stock,
+            price: item.price,
+            inbound_quantity: item.inboundNum,
+            outbound_quantity: item.outboundNum,
+            total_quantity: item.inboundNum + item.outboundNum,
+            categoryName: item.categoryName
+          }))
+        } else {
+          this.$message.error('获取货物排行数据失败')
         }
-        
-        // 更新图表
-        this.updateChart(dates, inboundData, outboundData)
-        
-        // 模拟排行榜数据
-        this.rankingList = [
-          { goods_name: 'iPhone 15', inbound_quantity: 80, outbound_quantity: 50, total_quantity: 30 },
-          { goods_name: '笔记本电脑', inbound_quantity: 60, outbound_quantity: 40, total_quantity: 20 },
-          { goods_name: '鼠标', inbound_quantity: 40, outbound_quantity: 35, total_quantity: 5 },
-          { goods_name: '键盘', inbound_quantity: 35, outbound_quantity: 32, total_quantity: 3 },
-          { goods_name: '显示器', inbound_quantity: 25, outbound_quantity: 23, total_quantity: 2 },
-          { goods_name: '耳机', inbound_quantity: 30, outbound_quantity: 29, total_quantity: 1 },
-          { goods_name: '音响', inbound_quantity: 20, outbound_quantity: 19, total_quantity: 1 },
-          { goods_name: '摄像头', inbound_quantity: 15, outbound_quantity: 15, total_quantity: 0 },
-          { goods_name: '路由器', inbound_quantity: 10, outbound_quantity: 10, total_quantity: 0 },
-          { goods_name: '网线', inbound_quantity: 50, outbound_quantity: 50, total_quantity: 0 }
-        ]
-        
+
+        // 获取仓库每日进出趋势数据
+        const trendParams = {
+          warehouseId: this.searchForm.warehouse_id,
+          startDate: this.searchForm.start_date,
+          endDate: this.searchForm.end_date
+        }
+        const trendRes = await reportApi.getWarehouseDailyTrend(trendParams)
+        if (trendRes.data && Array.isArray(trendRes.data)) {
+          const dates = trendRes.data.map(item => item.date)
+          const inboundData = trendRes.data.map(item => item.inboundNum)
+          const outboundData = trendRes.data.map(item => item.outboundNum)
+          this.updateChart(dates, inboundData, outboundData)
+        } else {
+          this.$message.error('获取趋势数据失败')
+        }
+      } catch (error) {
+        this.$message.error('获取数据失败')
+      } finally {
         this.loading = false
-      }, 500)
-      
-      // 实际项目中应该调用API
-      // try {
-      //   const res = await reportApi.getWarehouseReport(this.searchForm)
-      //   this.updateChart(res.data.dates, res.data.inbound, res.data.outbound)
-      //   this.rankingList = res.data.ranking
-      // } catch (error) {
-      //   this.$message.error('获取数据失败')
-      // } finally {
-      //   this.loading = false
-      // }
+      }
     },
     
     // 更新图表

@@ -45,7 +45,7 @@ router.beforeEach((to, from, next) => {
 
     // 如果访问登录页且已登录，重定向到仪表盘
     if (to.path === '/login' && token) {
-        next('/dashboard')
+        next('/')
         return
     }
 

@@ -23,6 +23,20 @@ export const permissionApi = {
       url: '/permission/menus',
       method: 'get'
     })
+  },
+  // 获取用户仓库权限
+  getUserWarehousePermissions(userId) {
+    return service({
+      url: `/permission/warehouse/${userId}`,
+      method: 'get'
+    })
+  },
+  // 设置用户仓库权限
+  setUserWarehousePermissions(data) {
+    return service({
+      url: '/permission/warehouse',
+      method: 'post',
+      data
+    })
   }
 }
-

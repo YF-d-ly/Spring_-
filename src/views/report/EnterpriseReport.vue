@@ -43,14 +43,14 @@
           style="width: 100%"
         >
           <el-table-column type="index" label="排名" width="80"></el-table-column>
-          <el-table-column prop="goods_name" label="货品名称" width="200"></el-table-column>
+          <el-table-column prop="goodsName" label="货品名称" width="200"></el-table-column>
           <el-table-column prop="warehouse_name" label="仓库" width="150"></el-table-column>
-          <el-table-column prop="inbound_quantity" label="入库数量" width="120"></el-table-column>
-          <el-table-column prop="outbound_quantity" label="出库数量" width="120"></el-table-column>
-          <el-table-column prop="total_quantity" label="总数量" width="120">
+          <el-table-column prop="inboundTotal" label="入库数量" width="120"></el-table-column>
+          <el-table-column prop="outboundTotal" label="出库数量" width="120"></el-table-column>
+          <el-table-column prop="totalInOut" label="总数量" width="120">
             <template slot-scope="scope">
-              <span :style="{ color: scope.row.total_quantity > 0 ? '#67C23A' : '#F56C6C' }">
-                {{ scope.row.total_quantity > 0 ? '+' : '' }}{{ scope.row.total_quantity }}
+              <span :style="{ color: scope.row.totalInOut > 0 ? '#67C23A' : '#F56C6C' }">
+                {{ scope.row.totalInOut > 0 ? '+' : '' }}{{ scope.row.totalInOut }}
               </span>
             </template>
           </el-table-column>
@@ -62,7 +62,7 @@
 
 <script>
 import * as echarts from 'echarts'
-// import { reportApi } from '@/api/report'
+import { reportApi } from '@/api/report'
 
 export default {
   name: 'EnterpriseReportPage',
@@ -113,51 +113,35 @@ export default {
     async fetchData() {
       this.loading = true
       
-      // 模拟数据
-      setTimeout(() => {
-        // 模拟每日数据
-        const dates = []
-        const inboundData = []
-        const outboundData = []
+      try {
+        // 调用后端API获取数据
+        const res = await reportApi.getGoodsTop10(this.searchForm)
         
-        for (let i = 29; i >= 0; i--) {
-          const date = new Date()
-          date.setDate(date.getDate() - i)
-          dates.push(this.formatDate(date))
-          inboundData.push(Math.floor(Math.random() * 100) + 50)
-          outboundData.push(Math.floor(Math.random() * 80) + 30)
-        }
+        // 正确解析后端返回的数据
+        const data = res.data || []
+        
+        // 从数据中提取日期和数量信息
+        const dates = data.map(item => item.lastOperationTime.split('T')[0])
+        const inboundData = data.map(item => item.inboundTotal)
+        const outboundData = data.map(item => item.outboundTotal)
         
         // 更新图表
         this.updateChart(dates, inboundData, outboundData)
         
-        // 模拟排行榜数据
-        this.rankingList = [
-          { goods_name: 'iPhone 15', warehouse_name: '一号仓库', inbound_quantity: 150, outbound_quantity: 80, total_quantity: 70 },
-          { goods_name: '洗发水', warehouse_name: '二号仓库', inbound_quantity: 200, outbound_quantity: 150, total_quantity: 50 },
-          { goods_name: '笔记本电脑', warehouse_name: '一号仓库', inbound_quantity: 100, outbound_quantity: 60, total_quantity: 40 },
-          { goods_name: '纸巾', warehouse_name: '二号仓库', inbound_quantity: 300, outbound_quantity: 280, total_quantity: 20 },
-          { goods_name: '矿泉水', warehouse_name: '三号仓库', inbound_quantity: 500, outbound_quantity: 490, total_quantity: 10 },
-          { goods_name: '面包', warehouse_name: '三号仓库', inbound_quantity: 200, outbound_quantity: 195, total_quantity: 5 },
-          { goods_name: 'T恤', warehouse_name: '二号仓库', inbound_quantity: 80, outbound_quantity: 75, total_quantity: 5 },
-          { goods_name: '鼠标', warehouse_name: '一号仓库', inbound_quantity: 60, outbound_quantity: 58, total_quantity: 2 },
-          { goods_name: '键盘', warehouse_name: '一号仓库', inbound_quantity: 50, outbound_quantity: 49, total_quantity: 1 },
-          { goods_name: '显示器', warehouse_name: '一号仓库', inbound_quantity: 30, outbound_quantity: 30, total_quantity: 0 }
-        ]
         
+        // 更新排行榜数据
+        this.rankingList = data.map(item => ({
+          goodsName: item.goodsName,
+          warehouse_name: item.warehouse_name,
+          inboundTotal: item.inboundTotal,
+          outboundTotal: item.outboundTotal,
+          totalInOut: item.totalInOut
+        }))
+      } catch (error) {
+        this.$message.error('获取数据失败')
+      } finally {
         this.loading = false
-      }, 500)
-      
-      // 实际项目中应该调用API
-      // try {
-      //   const res = await reportApi.getEnterpriseReport(this.searchForm)
-      //   this.updateChart(res.data.dates, res.data.inbound, res.data.outbound)
-      //   this.rankingList = res.data.ranking
-      // } catch (error) {
-      //   this.$message.error('获取数据失败')
-      // } finally {
-      //   this.loading = false
-      // }
+      }
     },
     
     // 更新图表

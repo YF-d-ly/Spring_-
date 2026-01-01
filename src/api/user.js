@@ -2,6 +2,14 @@
 import service from './index'
 
 export const userApi = {
+  // 用户登录
+  login(data) {
+    return service({
+      url: '/auth/login', // 修改为正确的登录接口路径
+      method: 'post',
+      data
+    })
+  },
   // 获取用户列表
   getUserList(params) {
     return service({
@@ -62,6 +70,12 @@ export const userApi = {
       url: '/user/profile',
       method: 'get'
     })
+  },
+  // 获取用户权限
+  getUserPermissions(userId) {
+    return service({
+      url: `/permission/user/${userId}`,
+      method: 'get'
+    })
   }
 }
-

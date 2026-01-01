@@ -1,16 +1,42 @@
-// 模拟用户数据
+// 导入axios实例
+import service from '@/api/interpter/request'
+
+// 用户状态管理
 const state = {
   token: localStorage.getItem('token') || null,
-  userInfo: JSON.parse(localStorage.getItem('userInfo') || '{}') || {},
-  menuTree: []
+  userInfo: (() => {
+    try {
+      const userInfoStr = localStorage.getItem('userInfo');
+      return userInfoStr ? JSON.parse(userInfoStr) : {};
+    } catch (error) {
+      console.error('解析用户信息失败:', error);
+      return {};
+    }
+  })(),
+  menuTree: [],
+  warehousePermissions: [],
+  menuPermissions: []
 }
 
 const getters = {
   isAuthenticated: state => !!state.token,
   userInfo: state => state.userInfo,
   menuTree: state => state.menuTree,
-  isSuperAdmin: state => state.userInfo.role === 'super_admin',
-  isAdmin: state => state.userInfo.role === 'super_admin' || state.userInfo.role === 'info_admin'
+  isSuperAdmin: state => {
+    // 添加安全检查，避免访问 undefined 对象的属性
+    if (!state.userInfo || !state.userInfo.roleId) {
+      return false;
+    }
+    return state.userInfo.roleId === 'ROLE_001';
+  },
+  isAdmin: state => {
+    if (!state.userInfo || !state.userInfo.roleId) {
+      return false;
+    }
+    return state.userInfo.roleId === 'ROLE_001' || state.userInfo.roleId === 'ROLE_002';
+  },
+  warehousePermissions: state => state.warehousePermissions,
+  menuPermissions: state => state.menuPermissions
 }
 
 const mutations = {
@@ -28,61 +54,61 @@ const mutations = {
   },
   SET_MENU_TREE(state, menuTree) {
     state.menuTree = menuTree
+  },
+  SET_WAREHOUSE_PERMISSIONS(state, warehousePermissions) {
+    state.warehousePermissions = warehousePermissions
+  },
+  SET_MENU_PERMISSIONS(state, menuPermissions) {
+    state.menuPermissions = menuPermissions
   }
 }
 
 const actions = {
   // 用户登录
-  async login({ commit }, { username }) {
-    // 模拟登录请求
-    // 这里应该调用实际的API
-    const response = await new Promise((resolve) => {
-      setTimeout(() => {
-        // 模拟不同用户角色
-        if (username === 'admin') {
-          resolve({
-            data: {
-              token: `token_${username}_${Date.now()}`,
-              user: {
-                id: 1,
-                username: username,
-                nickname: '超级管理员',
-                role: 'super_admin'
-              }
-            }
-          })
-        } else if (username === 'info') {
-          resolve({
-            data: {
-              token: `token_${username}_${Date.now()}`,
-              user: {
-                id: 2,
-                username: username,
-                nickname: '信息管理员',
-                role: 'info_admin'
-              }
-            }
-          })
-        } else {
-          resolve({
-            data: {
-              token: `token_${username}_${Date.now()}`,
-              user: {
-                id: 3,
-                username: username,
-                nickname: username,
-                role: 'normal_user'
-              }
-            }
-          })
-        }
-      }, 500)
-    })
-    
-    const { token, user } = response.data
-    commit('SET_TOKEN', token)
-    commit('SET_USER_INFO', user)
-    return Promise.resolve(response.data)
+  async login({ commit, dispatch }, { username, password }) {
+    try {
+      // 发送登录请求到后端
+      const response = await service.post('/auth/login', {
+        username,
+        password
+      });
+      
+      // 防御性检查：确保 response 存在且包含 code 字段
+      if (!response || !response.code) {
+        throw new Error('登录失败: 服务器未返回有效响应');
+      }
+      
+      // 检查响应状态码（优先使用 response.code）
+      if (response.code === 200) {
+        // 从响应数据中提取token和用户信息
+        const token = response.data?.token;
+        const userInfo = {
+          userId: response.data?.userId,
+          username: response.data?.username,
+          roleId: response.data?.roleId,
+          menus: response.data?.menus,
+          warehouses: response.data?.warehouses
+        };
+        
+        commit('SET_TOKEN', token);
+        commit('SET_USER_INFO', userInfo);
+        
+        // 根据后端返回的菜单数据构建菜单树
+        dispatch('updateMenuTree', response.data?.menus);
+        
+        return Promise.resolve({
+          token,
+          user: userInfo
+        });
+      } else {
+        // 使用 response.message 或默认提示
+        const message = response.message || '登录失败';
+        throw new Error(message);
+      }
+    } catch (error) {
+      console.error('登录失败:', error);
+      throw error;
+    }
   },
   
   // 用户登出
@@ -90,13 +116,15 @@ const actions = {
     commit('CLEAR_TOKEN')
     commit('SET_USER_INFO', {})
     commit('SET_MENU_TREE', [])
+    commit('SET_WAREHOUSE_PERMISSIONS', [])
+    commit('SET_MENU_PERMISSIONS', [])
   },
   
   // 获取用户信息
   async getUserInfo({ commit, state }) {
     if (!state.token) return
     
-    // 模拟获取用户信息
+    // 实际获取用户信息的API调用
     const response = await new Promise((resolve) => {
       setTimeout(() => {
         resolve({
@@ -109,84 +137,99 @@ const actions = {
     return Promise.resolve(response.data)
   },
   
-  // 更新用户菜单权限
-  updateMenuTree({ commit, state }) {
-    // 根据用户角色生成菜单树
-    const baseMenus = [
-      {
-        id: 1,
-        menu_name: '仪表盘',
-        menu_path: '/dashboard',
-        icon: 'el-icon-s-home'
-      },
-      {
-        id: 2,
-        menu_name: '仓库管理',
-        menu_path: '/warehouse/list',
-        icon: 'el-icon-warehouse',
-        children: [
-          { id: 21, menu_name: '仓库列表', menu_path: '/warehouse/list', icon: 'el-icon-list' }
-        ]
-      },
-      {
-        id: 3,
-        menu_name: '货品管理',
-        menu_path: '/goods/list',
-        icon: 'el-icon-goods',
-        children: [
-          { id: 31, menu_name: '货品列表', menu_path: '/goods/list', icon: 'el-icon-list' },
-          { id: 32, menu_name: '货品类别', menu_path: '/goods/category', icon: 'el-icon-menu' }
-        ]
-      },
-      {
-        id: 4,
-        menu_name: '库存管理',
-        menu_path: '/stock/log',
-        icon: 'el-icon-takeaway-box',
-        children: [
-          { id: 41, menu_name: '库存日志', menu_path: '/stock/log', icon: 'el-icon-document' },
-          { id: 42, menu_name: '调拨管理', menu_path: '/stock/transfer', icon: 'el-icon-position' }
-        ]
-      },
-      {
-        id: 5,
-        menu_name: '统计报表',
-        menu_path: '/report/enterprise',
-        icon: 'el-icon-data-line',
-        children: [
-          { id: 51, menu_name: '企业统计', menu_path: '/report/enterprise', icon: 'el-icon-data-line' },
-          { id: 52, menu_name: '仓库统计', menu_path: '/report/warehouse', icon: 'el-icon-data-line' }
-        ]
-      }
-    ]
+  // 获取用户权限
+  async getUserPermissions({ commit, state }) {
+    if (!state.token) return
     
-    // 如果是超级管理员，添加系统管理菜单
-    if (state.userInfo.role === 'super_admin') {
-      baseMenus.push({
-        id: 6,
-        menu_name: '系统管理',
-        menu_path: '/system/user',
-        icon: 'el-icon-setting',
-        children: [
-          { id: 61, menu_name: '用户管理', menu_path: '/system/user', icon: 'el-icon-user' },
-          { id: 62, menu_name: '权限管理', menu_path: '/system/permission', icon: 'el-icon-key' },
-          { id: 63, menu_name: '企业信息', menu_path: '/system/enterprise', icon: 'el-icon-office-building' }
-        ]
-      })
-    } else {
-      // 非超级管理员也显示企业信息
-      baseMenus.push({
-        id: 6,
-        menu_name: '系统管理',
-        menu_path: '/system/enterprise',
-        icon: 'el-icon-setting',
-        children: [
-          { id: 63, menu_name: '企业信息', menu_path: '/system/enterprise', icon: 'el-icon-office-building' }
-        ]
-      })
+    try {
+      // 获取用户菜单权限
+      const menuResponse = await service.get(`/permission/menu/${state.userInfo.userId}`);
+      const menuPermissions = menuResponse.data.data || [];
+      
+      // 获取用户仓库权限
+      const warehouseResponse = await service.get(`/permission/warehouse/${state.userInfo.userId}`);
+      const warehousePermissions = warehouseResponse.data.data || [];
+      
+      commit('SET_MENU_PERMISSIONS', menuPermissions);
+      commit('SET_WAREHOUSE_PERMISSIONS', warehousePermissions);
+      
+      return {
+        menuPermissions,
+        warehousePermissions
+      };
+    } catch (error) {
+      console.error('获取用户权限失败:', error);
+      return {
+        menuPermissions: [],
+        warehousePermissions: []
+      };
+    }
+  },
+  
+  // 更新用户菜单权限 - 基于后端返回的权限列表动态生成菜单
+  updateMenuTree({ commit }, menus) {
+    // 将后端返回的扁平菜单数据转换为树形结构
+    if (!menus || !Array.isArray(menus)) {
+      commit('SET_MENU_TREE', []);
+      return;
     }
     
-    commit('SET_MENU_TREE', baseMenus)
+    // 创建菜单映射表，便于查找
+    const menuMap = {};
+    const rootMenus = [];
+    
+    // 首先创建所有菜单项的映射
+    menus.forEach(menu => {
+      const convertedMenu = {
+        id: menu.id,
+        menu_name: menu.menuName,
+        menu_path: menu.menuPath,
+        icon: menu.icon ? `el-icon-${menu.icon}` : 'el-icon-menu',
+        children: []
+      };
+      
+      menuMap[menu.id] = convertedMenu;
+      
+      // 如果是根菜单（parentId为null），直接添加到根菜单数组
+      if (!menu.parentId) {
+        rootMenus.push(convertedMenu);
+      }
+    });
+    
+    // 将子菜单添加到对应的父菜单下
+    menus.forEach(menu => {
+      if (menu.parentId && menuMap[menu.parentId]) {
+        // 将当前菜单添加到其父菜单的children数组中
+        const convertedMenu = {
+          id: menu.id,
+          menu_name: menu.menuName,
+          menu_path: menu.menuPath,
+          icon: menu.icon ? `el-icon-${menu.icon}` : 'el-icon-menu'
+        };
+        menuMap[menu.parentId].children.push(convertedMenu);
+      }
+    });
+    
+    // 对每个根菜单的子菜单按排序顺序排序
+    rootMenus.forEach(menu => {
+      if (menu.children && menu.children.length > 0) {
+        menu.children.sort((a, b) => {
+          // 从原始菜单数据中找到对应的排序值
+          const menuA = menus.find(m => m.id === a.id);
+          const menuB = menus.find(m => m.id === b.id);
+          return (menuA ? menuA.sortOrder : 0) - (menuB ? menuB.sortOrder : 0);
+        });
+      }
+    });
+    
+    // 按照排序顺序对根菜单排序
+    rootMenus.sort((a, b) => {
+      const menuA = menus.find(m => m.id === a.id);
+      const menuB = menus.find(m => m.id === b.id);
+      return (menuA ? menuA.sortOrder : 0) - (menuB ? menuB.sortOrder : 0);
+    });
+    
+    commit('SET_MENU_TREE', rootMenus);
   }
 }
 

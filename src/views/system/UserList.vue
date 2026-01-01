@@ -7,6 +7,7 @@
           style="float: right; padding: 3px 0" 
           type="text"
           @click="addUser"
+          v-if="isSuperAdmin"
         >
           添加用户
         </el-button>
@@ -36,12 +37,13 @@
         </el-table-column>
         <el-table-column label="操作" fixed="right" width="300">
           <template slot-scope="scope">
-            <el-button size="mini" @click="editUser(scope.row)">编辑</el-button>
-            <el-button size="mini" type="primary" @click="resetPassword(scope.row)">重置密码</el-button>
+            <el-button size="mini" @click="editUser(scope.row)" v-if="isSuperAdmin">编辑</el-button>
+            <el-button size="mini" type="primary" @click="resetPassword(scope.row)" v-if="isSuperAdmin">重置密码</el-button>
             <el-button 
               size="mini" 
               :type="scope.row.status === 1 ? 'warning' : 'success'"
               @click="toggleStatus(scope.row)"
+              v-if="isSuperAdmin"
             >
               {{ scope.row.status === 1 ? '禁用' : '启用' }}
             </el-button>
@@ -49,6 +51,7 @@
               size="mini" 
               type="danger" 
               @click="deleteUser(scope.row)"
+              v-if="isSuperAdmin"
             >
               删除
             </el-button>
@@ -89,7 +92,7 @@
           <el-input v-model="userForm.nickname"></el-input>
         </el-form-item>
         <el-form-item label="角色" prop="role">
-          <el-select v-model="userForm.role" placeholder="请选择角色" style="width: 100%">
+          <el-select v-model="userForm.role" placeholder="请选择角色" style="width: 100%" :disabled="!isSuperAdmin">
             <el-option label="超级管理员" value="super_admin"></el-option>
             <el-option label="信息管理员" value="info_admin"></el-option>
           </el-select>
@@ -103,13 +106,15 @@
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveUser">确定</el-button>
+        <el-button type="primary" @click="saveUser" v-if="isSuperAdmin">确定</el-button>
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script>
+import { userApi } from '@/api/user'
+
 export default {
   name: 'UserListPage',
   data() {
@@ -169,6 +174,11 @@ export default {
       }
     }
   },
+  computed: {
+    isSuperAdmin() {
+      return this.$store.getters['user/isSuperAdmin']
+    }
+  },
   created() {
     this.fetchUserList();
   },
@@ -177,18 +187,25 @@ export default {
     async fetchUserList() {
       this.loading = true;
       
-      // 模拟API调用
-      setTimeout(() => {
-        // 模拟用户数据
-        this.userList = [
-          { id: 1, username: 'admin', nickname: '超级管理员', role: 'super_admin', status: 1 },
-          { id: 2, username: 'info', nickname: '信息管理员', role: 'info_admin', status: 1 },
-          { id: 3, username: 'user1', nickname: '普通用户1', role: 'info_admin', status: 1 },
-          { id: 4, username: 'user2', nickname: '普通用户2', role: 'info_admin', status: 0 }
-        ];
-        this.total = this.userList.length;
+      try {
+        const res = await userApi.getUserList({
+          page: this.currentPage,
+          size: this.pageSize
+        });
+        
+        if (res.data && Array.isArray(res.data.records)) {
+          this.userList = res.data.records;
+          this.total = res.data.total || 0;
+        } else {
+          this.userList = [];
+          this.total = 0;
+        }
+      } catch (error) {
+        console.error('获取用户列表失败:', error);
+        this.$message.error('获取用户列表失败');
+      } finally {
         this.loading = false;
-      }, 500);
+      }
     },
     
     // 添加用户
@@ -234,30 +251,26 @@ export default {
       try {
         await this.$refs.userForm.validate();
         
-        // 模拟API调用
         if (this.userForm.id) {
           // 编辑用户
-          setTimeout(() => {
-            const index = this.userList.findIndex(u => u.id === this.userForm.id);
-            if (index !== -1) {
-              // 更新用户信息
-              this.userList.splice(index, 1, { ...this.userForm });
-              this.$message.success('用户更新成功');
-            }
+          const res = await userApi.updateUser(this.userForm);
+          if (res.code === 200) {
+            this.$message.success('用户更新成功');
             this.dialogVisible = false;
-          }, 500);
+            this.fetchUserList();
+          } else {
+            this.$message.error(res.message || '更新失败');
+          }
         } else {
           // 新增用户
-          setTimeout(() => {
-            const newUser = {
-              ...this.userForm,
-              id: this.userList.length + 1
-            };
-            this.userList.push(newUser);
-            this.total = this.userList.length;
+          const res = await userApi.addUser(this.userForm);
+          if (res.code === 200) {
             this.$message.success('用户添加成功');
             this.dialogVisible = false;
-          }, 500);
+            this.fetchUserList();
+          } else {
+            this.$message.error(res.message || '添加失败');
+          }
         }
       } catch (error) {
         this.$message.error('表单验证失败');
@@ -265,53 +278,76 @@ export default {
     },
     
     // 删除用户
-    deleteUser(row) {
-      this.$confirm(`确定删除用户 "${row.username}" 吗？`, '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        // 模拟API调用
-        setTimeout(() => {
-          const index = this.userList.findIndex(u => u.id === row.id);
-          if (index !== -1) {
-            this.userList.splice(index, 1);
-            this.total = this.userList.length;
-            this.$message.success('删除成功');
-          }
-        }, 500);
-      }).catch(() => {
+    async deleteUser(row) {
+      try {
+        await this.$confirm(`确定删除用户 "${row.username}" 吗？`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        });
+        
+        const res = await userApi.deleteUser(row.id);
+        if (res.code === 200) {
+          this.$message.success('删除成功');
+          this.fetchUserList();
+        } else {
+          this.$message.error(res.message || '删除失败');
+        }
+      } catch (error) {
         // 取消删除
-      });
+        console.log('用户取消删除操作');
+      }
     },
     
     // 重置密码
-    resetPassword(row) {
-      this.$confirm(`确定重置用户 "${row.username}" 的密码吗？`, '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        // 模拟API调用
-        setTimeout(() => {
+    async resetPassword(row) {
+      try {
+        await this.$confirm(`确定重置用户 "${row.username}" 的密码吗？`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        });
+        
+        const res = await userApi.resetPassword(row.id);
+        if (res.code === 200) {
           this.$message.success('密码重置成功，新密码为：123456');
-        }, 500);
-      }).catch(() => {
+        } else {
+          this.$message.error(res.message || '重置失败');
+        }
+      } catch (error) {
         // 取消重置
-      });
+        console.log('用户取消重置密码操作');
+      }
     },
     
     // 切换用户状态
-    toggleStatus(row) {
+    async toggleStatus(row) {
       const newStatus = row.status === 1 ? 0 : 1;
-      // 模拟API调用
-      setTimeout(() => {
-        const index = this.userList.findIndex(u => u.id === row.id);
-        if (index !== -1) {
-          this.userList[index].status = newStatus;
-          this.$message.success(newStatus === 1 ? '启用成功' : '禁用成功');
+      const actionText = newStatus === 1 ? '启用' : '禁用';
+      
+      try {
+        const res = await userApi.updateUser({ 
+          ...row, 
+          status: newStatus 
+        });
+        
+        if (res.code === 200) {
+          this.$message.success(`${actionText}成功`);
+          // 更新本地列表状态
+          const index = this.userList.findIndex(u => u.id === row.id);
+          if (index !== -1) {
+            this.userList[index].status = newStatus;
+          }
+        } else {
+          this.$message.error(res.message || `${actionText}失败`);
+          // 如果更新失败，恢复原状态
+          row.status = newStatus === 1 ? 0 : 1;
         }
-      }, 500);
+      } catch (error) {
+        this.$message.error(`${actionText}失败`);
+        // 如果更新失败，恢复原状态
+        row.status = newStatus === 1 ? 0 : 1;
+      }
     },
     
     // 分页相关方法

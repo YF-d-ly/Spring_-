@@ -81,9 +81,9 @@
           <el-dropdown @command="handleCommand" trigger="click">
             <span class="user-dropdown">
               <el-avatar :size="32" :src="userAvatar" class="user-avatar">
-                {{ userInfo.nickname ? userInfo.nickname.charAt(0) : 'U' }}
+                {{ userInfo?.nickname ? userInfo.nickname.charAt(0) : 'U' }}
               </el-avatar>
-              <span class="user-name">{{ userInfo.nickname || '用户' }}</span>
+              <span class="user-name">{{ userInfo?.nickname || '用户' }}</span>
               <i class="el-icon-arrow-down"></i>
             </span>
             <el-dropdown-menu slot="dropdown">

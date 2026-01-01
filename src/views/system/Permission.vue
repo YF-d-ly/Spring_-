@@ -74,9 +74,9 @@
 </template>
 
 <script>
-// import { permissionApi } from '@/api/permission'
-// import { userApi } from '@/api/user'
-// import { warehouseApi } from '@/api/warehouse'
+import { permissionApi } from '@/api/permission'
+import { userApi } from '@/api/user'
+import { warehouseApi } from '@/api/warehouse'
 
 export default {
   name: 'PermissionPage',

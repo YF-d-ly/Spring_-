@@ -109,7 +109,7 @@
           <div class="quick-actions">
             <el-button 
               v-for="action in quickActions" 
-              :key="action.path"
+              :key="action.label"
               :type="action.type" 
               :icon="action.icon"
               @click="$router.push(action.path)"

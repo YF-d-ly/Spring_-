@@ -151,6 +151,8 @@
 </template>
 
 <script>
+import { mapActions } from 'vuex'
+
 export default {
   name: 'LoginPage',
   data() {
@@ -188,23 +190,32 @@ export default {
     }
   },
   methods: {
+    ...mapActions('user', ['login', 'updateMenuTree']),
+    
     async handleLogin() {
       try {
         await this.$refs.loginForm.validate()
         this.loading = true
-        await this.$store.dispatch('user/login', { username: this.loginForm.username })
-        // 更新菜单树并跳转到仪表盘
-        await this.$store.dispatch('user/updateMenuTree')
         
-        // 记住密码
-        if (this.rememberPassword) {
-          localStorage.setItem('rememberedUsername', this.loginForm.username)
+        // 调用store中的login方法
+        const res = await this.login({
+          username: this.loginForm.username,
+          password: this.loginForm.password
+        })
+        
+        if (res) {
+          // 记住密码
+          if (this.rememberPassword) {
+            localStorage.setItem('rememberedUsername', this.loginForm.username)
+          } else {
+            localStorage.removeItem('rememberedUsername')
+          }
+          
+          this.$message.success('登录成功')
+          this.$router.push('/dashboard')
         } else {
-          localStorage.removeItem('rememberedUsername')
+          this.$message.error('登录失败')
         }
-        
-        this.$message.success('登录成功')
-        this.$router.push('/dashboard')
       } catch (err) {
         if (err !== false) {
           console.error(err)
