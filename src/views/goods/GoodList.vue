@@ -18,7 +18,7 @@
           <el-input v-model="searchForm.name" placeholder="请输入货品名称" clearable></el-input>
         </el-form-item>
         <el-form-item label="类别">
-          <el-select v-model="searchForm.category_id" placeholder="请选择类别" clearable style="width: 200px;">
+          <el-select v-model="searchForm.categoryId" placeholder="请选择类别" clearable style="width: 200px;">
             <el-option 
               v-for="item in categoryList" 
               :key="item.id" 
@@ -28,7 +28,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="仓库">
-          <el-select v-model="searchForm.warehouse_id" placeholder="请选择仓库" clearable style="width: 200px;">
+          <el-select v-model="searchForm.warehouseId" placeholder="请选择仓库" clearable style="width: 200px;">
             <el-option 
               v-for="item in warehouseList" 
               :key="item.id" 
@@ -62,8 +62,8 @@
           </template>
         </el-table-column>
         <el-table-column prop="name" label="货品名称" width="150"></el-table-column>
-        <el-table-column prop="category_name" label="类别" width="120"></el-table-column>
-        <el-table-column prop="warehouse_name" label="所属仓库" width="150"></el-table-column>
+        <el-table-column prop="categoryName" label="类别" width="120"></el-table-column>
+        <el-table-column prop="warehouseName" label="所属仓库" width="150"></el-table-column>
         <el-table-column prop="price" label="价格" width="100">
           <template slot-scope="scope">
             ¥{{ scope.row.price }}
@@ -116,8 +116,8 @@
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="类别" prop="category_id">
-              <el-select v-model="goodsForm.category_id" placeholder="请选择类别" style="width: 100%;">
+            <el-form-item label="类别" prop="categoryId">
+              <el-select v-model="goodsForm.categoryId" placeholder="请选择类别" style="width: 100%;">
                 <el-option 
                   v-for="item in categoryList" 
                   :key="item.id" 
@@ -128,8 +128,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="所属仓库" prop="warehouse_id">
-              <el-select v-model="goodsForm.warehouse_id" placeholder="请选择仓库" style="width: 100%;">
+            <el-form-item label="所属仓库" prop="warehouseId">
+              <el-select v-model="goodsForm.warehouseId" placeholder="请选择仓库" style="width: 100%;">
                 <el-option 
                   v-for="item in warehouseList" 
                   :key="item.id" 
@@ -185,8 +185,9 @@
 </template>
 
 <script>
-// import { goodsApi } from '@/api/goods'
-// import { warehouseApi } from '@/api/warehouse'
+import { goodsApi } from '@/api/goods'
+import { categoryApi } from '@/api/category'
+import { warehouseApi } from '@/api/warehouse'  // 新增导入仓库API
 
 export default {
   name: 'GoodListPage',
@@ -203,14 +204,14 @@ export default {
       total: 0,
       searchForm: {
         name: '',
-        category_id: null,
-        warehouse_id: null
+        categoryId: null, // 修改为驼峰命名
+        warehouseId: null // 修改为驼峰命名
       },
       goodsForm: {
         id: null,
         name: '',
-        category_id: null,
-        warehouse_id: null,
+        categoryId: null, // 修改为驼峰命名
+        warehouseId: null, // 修改为驼峰命名
         price: 0,
         stock: 0,
         image: '',
@@ -220,10 +221,10 @@ export default {
         name: [
           { required: true, message: '请输入货品名称', trigger: 'blur' }
         ],
-        category_id: [
+        categoryId: [ // 修改为驼峰命名
           { required: true, message: '请选择类别', trigger: 'change' }
         ],
-        warehouse_id: [
+        warehouseId: [ // 修改为驼峰命名
           { required: true, message: '请选择仓库', trigger: 'change' }
         ],
         price: [
@@ -243,60 +244,77 @@ export default {
   methods: {
     // 获取类别列表
     async fetchCategoryList() {
-      // 模拟数据
-      this.categoryList = [
-        { id: 1, name: '电子产品', code: 'ELEC' },
-        { id: 2, name: '日用品', code: 'DAILY' },
-        { id: 3, name: '食品', code: 'FOOD' },
-        { id: 4, name: '服装', code: 'CLOTH' }
-      ]
+      try {
+        const res = await categoryApi.getCategoryList()
+        if (res && res.code === 200) {
+          this.categoryList = res.data || []
+        } else {
+          this.$message.error('获取类别列表失败')
+        }
+      } catch (error) {
+        console.error('获取类别列表失败:', error)
+        this.$message.error('获取类别列表失败')
+      }
     },
     
     // 获取仓库列表
     async fetchWarehouseList() {
-      // 模拟数据
-      this.warehouseList = [
-        { id: 1, name: '一号仓库' },
-        { id: 2, name: '二号仓库' },
-        { id: 3, name: '三号仓库' }
-      ]
+      try {
+        const res = await warehouseApi.getWarehouseList()  // 修改为使用 warehouseApi
+        if (res && res.code === 200) {  // 修复语法错误：将 20:0 改为 200
+          this.warehouseList = res.data || []
+        } else {
+          this.$message.error('获取仓库列表失败')
+        }
+      } catch (error) {
+        console.error('获取仓库列表失败:', error)
+        this.$message.error('获取仓库列表失败')
+      }
     },
     
     // 获取货品列表
     async fetchGoodsList() {
       this.loading = true
-      
-      // 模拟API调用
-      setTimeout(() => {
-        this.goodsList = [
-          { 
-            id: 1, 
-            name: 'iPhone 15', 
-            category_id: 1, 
-            category_name: '电子产品',
-            warehouse_id: 1,
-            warehouse_name: '一号仓库',
-            price: 5999.00,
-            stock: 50,
-            image: 'https://via.placeholder.com/150',
-            description: '苹果最新款手机'
-          },
-          { 
-            id: 2, 
-            name: '洗发水', 
-            category_id: 2, 
-            category_name: '日用品',
-            warehouse_id: 2,
-            warehouse_name: '二号仓库',
-            price: 39.90,
-            stock: 200,
-            image: '',
-            description: '去屑洗发水'
+      try {
+        const params = {
+          page: this.currentPage,
+          size: this.pageSize,
+          name: this.searchForm.name,
+          categoryId: this.searchForm.categoryId, // 修改为驼峰命名
+          warehouseId: this.searchForm.warehouseId // 修改为驼峰命名
+        }
+        const res = await goodsApi.getGoodsList(params)
+        
+        // 根据后端实际返回格式调整数据处理
+        if (res && res.code === 200) {
+          if (res.data && res.data.records) {
+            this.goodsList = res.data.records
+            this.total = res.data.total || 0
+          } else if (res.data && Array.isArray(res.data)) {
+            this.goodsList = res.data
+            this.total = res.data.length
+          } else {
+            this.goodsList = []
+            this.total = 0
           }
-        ]
-        this.total = this.goodsList.length
+        } else {
+          if (res && res.records) {
+            this.goodsList = res.records
+            this.total = res.total || 0
+          } else if (Array.isArray(res)) {
+            this.goodsList = res
+            this.total = res.length
+          } else {
+            this.goodsList = []
+            this.total = 0
+          }
+        }
+      } catch (error) {
+        console.error('获取货品列表失败:', error)
+        this.$message.error('获取货品列表失败')
+      } finally {
         this.loading = false
-      }, 500)
+      }
     },
     
     // 搜索
@@ -354,38 +372,30 @@ export default {
       try {
         await this.$refs.goodsForm.validate()
         
-        // 模拟API调用
+        let result
         if (this.goodsForm.id) {
-          setTimeout(() => {
-            const index = this.goodsList.findIndex(g => g.id === this.goodsForm.id)
-            if (index !== -1) {
-              const category = this.categoryList.find(c => c.id === this.goodsForm.category_id)
-              const warehouse = this.warehouseList.find(w => w.id === this.goodsForm.warehouse_id)
-              this.goodsList.splice(index, 1, {
-                ...this.goodsForm,
-                category_name: category ? category.name : '',
-                warehouse_name: warehouse ? warehouse.name : ''
-              })
-              this.$message.success('货品更新成功')
-            }
-            this.dialogVisible = false
-          }, 500)
+          // 更新货品
+          result = await goodsApi.updateGoods(this.goodsForm)
+          if (result && result.code === 200) {
+            this.$message.success('货品更新成功')
+          } else {
+            this.$message.error(result.message || '更新失败')
+            return
+          }
         } else {
-          setTimeout(() => {
-            const category = this.categoryList.find(c => c.id === this.goodsForm.category_id)
-            const warehouse = this.warehouseList.find(w => w.id === this.goodsForm.warehouse_id)
-            const newGoods = {
-              ...this.goodsForm,
-              id: this.goodsList.length + 1,
-              category_name: category ? category.name : '',
-              warehouse_name: warehouse ? warehouse.name : ''
-            }
-            this.goodsList.push(newGoods)
-            this.total = this.goodsList.length
+          // 添加货品
+          result = await goodsApi.addGoods(this.goodsForm)
+          if (result && result.code === 200) {
             this.$message.success('货品添加成功')
-            this.dialogVisible = false
-          }, 500)
+          } else {
+            this.$message.error(result.message || '添加失败')
+            return
+          }
         }
+        
+        // 重新获取列表
+        this.fetchGoodsList()
+        this.dialogVisible = false
       } catch (error) {
         this.$message.error('表单验证失败')
       }
@@ -397,15 +407,19 @@ export default {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
-      }).then(() => {
-        setTimeout(() => {
-          const index = this.goodsList.findIndex(g => g.id === row.id)
-          if (index !== -1) {
-            this.goodsList.splice(index, 1)
-            this.total = this.goodsList.length
+      }).then(async () => {
+        try {
+          const result = await goodsApi.deleteGoods(row.id)
+          if (result && result.code === 200) {
             this.$message.success('删除成功')
+            this.fetchGoodsList() // 重新获取列表
+          } else {
+            this.$message.error(result.message || '删除失败')
           }
-        }, 500)
+        } catch (error) {
+          console.error('删除货品失败:', error)
+          this.$message.error('删除失败')
+        }
       }).catch(() => {})
     },
     

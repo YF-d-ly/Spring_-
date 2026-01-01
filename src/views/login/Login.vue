@@ -214,12 +214,12 @@ export default {
           this.$message.success('登录成功')
           this.$router.push('/dashboard')
         } else {
-          this.$message.error('登录失败')
+          this.$alert('登录失败', '提示', { confirmButtonText: '确定', type: 'error' })
         }
       } catch (err) {
         if (err !== false) {
           console.error(err)
-          this.$message.error('登录失败')
+          this.$alert(err.message || '登录失败', '登录失败', { confirmButtonText: '确定', type: 'error' })
         }
       } finally {
         this.loading = false
