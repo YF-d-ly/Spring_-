@@ -72,45 +72,44 @@ const actions = {
         username,
         password
       });
-      
-      // 防御性检查：确保 response 存在且包含 code 字段
-      if (!response || !response.code) {
-        throw new Error('登录失败: 服务器未返回有效响应');
-      }
-      
-      // 检查响应状态码（优先使用 response.code）
+
+      // 检查响应状态，使用可选链操作符确保安全访问
+      // 注意：拦截器已经解包了response.data，所以这里的response直接就是后端返回的数据对象
       if (response.code === 200) {
         // 从响应数据中提取token和用户信息
-        const token = response.data?.token;
+        const token = response.data.token;
         const userInfo = {
-          userId: response.data?.userId,
-          username: response.data?.username,
-          roleId: response.data?.roleId,
-          menus: response.data?.menus,
-          warehouses: response.data?.warehouses
+          userId: response.data.userId,
+          username: response.data.username,
+          roleId: response.data.roleId,
+          menus: response.data.menus,
+          warehouses: response.data.warehouses
         };
-        
+
         commit('SET_TOKEN', token);
         commit('SET_USER_INFO', userInfo);
-        
+
         // 根据后端返回的菜单数据构建菜单树
-        dispatch('updateMenuTree', response.data?.menus);
-        
+        dispatch('updateMenuTree', response.data.menus);
+
         return Promise.resolve({
           token,
           user: userInfo
         });
+      } else if (response.code === 401) {
+        // 处理401状态码，提示用户未授权
+        throw new Error('未授权，请检查账号密码');
       } else {
-        // 使用 response.message 或默认提示
-        const message = response.message || '登录失败';
-        throw new Error(message);
+        // 处理其他状态码，提供默认错误消息
+        const errorMessage = response.message || '登录失败';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('登录失败:', error);
       throw error;
     }
   },
-  
+
   // 用户登出
   logout({ commit }) {
     commit('CLEAR_TOKEN')
@@ -119,11 +118,11 @@ const actions = {
     commit('SET_WAREHOUSE_PERMISSIONS', [])
     commit('SET_MENU_PERMISSIONS', [])
   },
-  
+
   // 获取用户信息
   async getUserInfo({ commit, state }) {
     if (!state.token) return
-    
+
     // 实际获取用户信息的API调用
     const response = await new Promise((resolve) => {
       setTimeout(() => {
@@ -132,27 +131,29 @@ const actions = {
         })
       }, 300)
     })
-    
+
     commit('SET_USER_INFO', response.data)
     return Promise.resolve(response.data)
   },
-  
+
   // 获取用户权限
   async getUserPermissions({ commit, state }) {
     if (!state.token) return
-    
+
     try {
       // 获取用户菜单权限
       const menuResponse = await service.get(`/permission/menu/${state.userInfo.userId}`);
-      const menuPermissions = menuResponse.data.data || [];
-      
+      // 注意：拦截器已经解包了response.data，所以这里的menuResponse直接就是后端返回的数据对象
+      // 如果后端返回的是 { code: 200, data: [...] }，那么 menuResponse.data 就是数据数组
+      const menuPermissions = menuResponse.data || [];
+
       // 获取用户仓库权限
       const warehouseResponse = await service.get(`/permission/warehouse/${state.userInfo.userId}`);
-      const warehousePermissions = warehouseResponse.data.data || [];
-      
+      const warehousePermissions = warehouseResponse.data || [];
+
       commit('SET_MENU_PERMISSIONS', menuPermissions);
       commit('SET_WAREHOUSE_PERMISSIONS', warehousePermissions);
-      
+
       return {
         menuPermissions,
         warehousePermissions
@@ -165,7 +166,7 @@ const actions = {
       };
     }
   },
-  
+
   // 更新用户菜单权限 - 基于后端返回的权限列表动态生成菜单
   updateMenuTree({ commit }, menus) {
     // 将后端返回的扁平菜单数据转换为树形结构
@@ -173,11 +174,11 @@ const actions = {
       commit('SET_MENU_TREE', []);
       return;
     }
-    
+
     // 创建菜单映射表，便于查找
     const menuMap = {};
     const rootMenus = [];
-    
+
     // 首先创建所有菜单项的映射
     menus.forEach(menu => {
       const convertedMenu = {
@@ -187,15 +188,15 @@ const actions = {
         icon: menu.icon ? `el-icon-${menu.icon}` : 'el-icon-menu',
         children: []
       };
-      
+
       menuMap[menu.id] = convertedMenu;
-      
+
       // 如果是根菜单（parentId为null），直接添加到根菜单数组
       if (!menu.parentId) {
         rootMenus.push(convertedMenu);
       }
     });
-    
+
     // 将子菜单添加到对应的父菜单下
     menus.forEach(menu => {
       if (menu.parentId && menuMap[menu.parentId]) {
@@ -209,7 +210,7 @@ const actions = {
         menuMap[menu.parentId].children.push(convertedMenu);
       }
     });
-    
+
     // 对每个根菜单的子菜单按排序顺序排序
     rootMenus.forEach(menu => {
       if (menu.children && menu.children.length > 0) {
@@ -221,14 +222,14 @@ const actions = {
         });
       }
     });
-    
+
     // 按照排序顺序对根菜单排序
     rootMenus.sort((a, b) => {
       const menuA = menus.find(m => m.id === a.id);
       const menuB = menus.find(m => m.id === b.id);
       return (menuA ? menuA.sortOrder : 0) - (menuB ? menuB.sortOrder : 0);
     });
-    
+
     commit('SET_MENU_TREE', rootMenus);
   }
 }
