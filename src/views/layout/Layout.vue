@@ -106,6 +106,20 @@
     
     <!-- 快捷操作面板 -->
     <QuickActionsPanel />
+
+
+    
+    <!-- 快捷操作面板弹窗 -->
+    <el-dialog
+      title="快捷操作"
+      :visible.sync="showQuickActions"
+      width="30%"
+      :before-close="handleCloseQuickActions"
+      class="quick-actions-dialog"
+    >
+      <QuickActionsPanel :isDialog="true" @close="showQuickActions = false"/>
+    </el-dialog>
+
   </el-container>
 </template>
 
