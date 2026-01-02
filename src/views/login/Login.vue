@@ -49,7 +49,15 @@
         <div class="login-card">
           <div class="card-decoration"></div>
           <div class="card-header">
-            <h3>账号登录</h3>
+            <h3>账号登录    
+              <span class="method-switch">
+              <el-radio-group v-model="loginMethod" size="small">
+                <el-radio-button label="password">密码登录</el-radio-button>
+                <el-radio-button label="emailCode">邮箱验证码登录</el-radio-button>
+              </el-radio-group>
+            </span>
+          </h3>
+         
           </div>
           
           <el-form 
@@ -59,27 +67,57 @@
             @submit.native.prevent="handleLogin"
             class="login-form"
           >
-            <el-form-item prop="username">
-              <el-input
-                v-model="loginForm.username"
-                placeholder="请输入账号/手机号"
-                prefix-icon="el-icon-user"
-                size="large"
-                class="login-input"
-              ></el-input>
-            </el-form-item>
+            <template v-if="loginMethod==='password'">
+              <el-form-item prop="username">
+                <el-input
+                  v-model="loginForm.username"
+                  placeholder="请输入账号/手机号"
+                  prefix-icon="el-icon-user"
+                  size="large"
+                  class="login-input"
+                ></el-input>
+              </el-form-item>
+              <el-form-item prop="password">
+                <el-input
+                  v-model="loginForm.password"
+                  type="password"
+                  placeholder="请输入密码"
+                  prefix-icon="el-icon-lock"
+                  size="large"
+                  class="login-input"
+                  @keyup.enter.native="handleLogin"
+                ></el-input>
+              </el-form-item>
+            </template>
             
-            <el-form-item prop="password">
-              <el-input
-                v-model="loginForm.password"
-                type="password"
-                placeholder="请输入密码"
-                prefix-icon="el-icon-lock"
-                size="large"
-                class="login-input"
-                @keyup.enter.native="handleLogin"
-              ></el-input>
-            </el-form-item>
+            <template v-else>
+              <el-form-item prop="email">
+                <el-input
+                  v-model="loginForm.email"
+                  placeholder="请输入邮箱"
+                  prefix-icon="el-icon-message"
+                  size="large"
+                  class="login-input"
+                ></el-input>
+              </el-form-item>
+              <el-form-item prop="code">
+                <div class="captcha-container">
+                  <el-input
+                    v-model="loginForm.code"
+                    placeholder="请输入邮箱验证码"
+                    prefix-icon="el-icon-key"
+                    size="large"
+                    class="captcha-input"
+                    maxlength="6"
+                  ></el-input>
+                  <el-button type="primary" @click="handleSendLoginCode" :disabled="codeCountdown>0 || sendingCode">
+                    {{ codeCountdown>0 ? codeCountdown + 's后重试' : (sendingCode ? '发送中...' : '发送验证码') }}
+                  </el-button>
+                </div>
+              </el-form-item>
+              <br>
+              
+            </template>
             
             <!-- 验证码 -->
             <el-form-item prop="captcha">
@@ -144,7 +182,7 @@
         <span>Mac Intel版</span>
       </div>
       <div class="copyright">
-        Copyright ©2024 仓储管理系统 All Right Reserved
+        Copyright ©2026 仓储管理系统 All Right Reserved
       </div>
     </div>
   </div>
@@ -152,61 +190,81 @@
 
 <script>
 import { mapActions } from 'vuex'
+import { userApi } from '@/api/user'
 
 export default {
   name: 'LoginPage',
   data() {
-    // 验证码验证规则
-    const validateCaptcha = (rule, value, callback) => {
-      if (!value) {
-        callback(new Error('请输入验证码'))
-      } else if (value.toLowerCase() !== this.captchaText.toLowerCase()) {
-        callback(new Error('验证码不正确'))
-      } else {
-        callback()
-      }
-    }
-    
     return {
+      loginMethod: 'password',
       loginForm: {
         username: '',
         password: '',
+        email: '',
+        code: '',
         captcha: ''
-      },
-      loginRules: {
-        username: [
-          { required: true, message: '请输入账号', trigger: 'blur' }
-        ],
-        password: [
-          { required: true, message: '请输入密码', trigger: 'blur' }
-        ],
-        captcha: [
-          { required: true, validator: validateCaptcha, trigger: 'blur' }
-        ]
       },
       loading: false,
       rememberPassword: false,
-      captchaText: '' // 存储验证码文本
+      captchaText: '',
+      sendingCode: false,
+      codeCountdown: 0,
+      codeTimer: null
+    }
+  },
+  computed: {
+    loginRules() {
+      const baseCaptcha = { required: true, validator: (rule, value, callback) => {
+        if (!value) {
+          callback(new Error('请输入验证码'))
+        } else if (value.toLowerCase() !== this.captchaText.toLowerCase()) {
+          callback(new Error('验证码不正确'))
+        } else {
+          callback()
+        }
+      }, trigger: 'blur' }
+      if (this.loginMethod === 'password') {
+        return {
+          username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+          password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+          captcha: [baseCaptcha]
+        }
+      }
+      return {
+        email: [
+          { required: true, message: '请输入邮箱', trigger: 'blur' },
+          { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
+        ],
+        code: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
+        captcha: [baseCaptcha]
+      }
     }
   },
   methods: {
-    ...mapActions('user', ['login', 'updateMenuTree']),
+    ...mapActions('user', ['login', 'loginByCode', 'updateMenuTree']),
     
     async handleLogin() {
       try {
         await this.$refs.loginForm.validate()
         this.loading = true
         
-        // 调用store中的login方法
-        const res = await this.login({
-          username: this.loginForm.username,
-          password: this.loginForm.password
-        })
+        let res
+        if (this.loginMethod === 'password') {
+          res = await this.login({
+            username: this.loginForm.username,
+            password: this.loginForm.password
+          })
+        } else {
+          res = await this.loginByCode({
+            email: this.loginForm.email,
+            code: this.loginForm.code
+          })
+        }
         
         if (res) {
-          // 记住密码
           if (this.rememberPassword) {
-            localStorage.setItem('rememberedUsername', this.loginForm.username)
+            const key = this.loginMethod === 'password' ? this.loginForm.username : this.loginForm.email
+            localStorage.setItem('rememberedUsername', key)
           } else {
             localStorage.removeItem('rememberedUsername')
           }
@@ -225,8 +283,41 @@ export default {
         this.loading = false
       }
     },
+    async handleSendLoginCode() {
+      if (this.sendingCode || this.codeCountdown > 0) return
+      try {
+        await this.$refs.loginForm.validateField('email')
+        this.sendingCode = true
+        const res = await userApi.sendEmailCode({ email: this.loginForm.email })
+        if (res && (res.code === 200 || res.success === true)) {
+          this.$message.success('验证码已发送')
+          this.startCodeCountdown()
+        } else {
+          this.$message.error(res.message || '发送验证码失败')
+        }
+      } catch (e) {
+        console.error('发送验证码失败:', e)
+        if (e && e.message) this.$message.error(e.message)
+      } finally {
+        this.sendingCode = false
+      }
+    },
+    startCodeCountdown() {
+      this.codeCountdown = 60
+      if (this.codeTimer) {
+        clearInterval(this.codeTimer)
+        this.codeTimer = null
+      }
+      this.codeTimer = setInterval(() => {
+        this.codeCountdown--
+        if (this.codeCountdown <= 0) {
+          clearInterval(this.codeTimer)
+          this.codeTimer = null
+        }
+      }, 1000)
+    },
     handleForgotPassword() {
-      this.$message.info('忘记密码功能开发中...')
+      this.$router.push('/forgot-password')
     },
     handleWeChatLogin() {
       this.$message.info('企业微信登录功能开发中...')
@@ -238,7 +329,7 @@ export default {
       this.handleLogin()
     },
     handleRegister() {
-      this.$message.info('注册功能开发中...')
+      this.$router.push('/register')
     },
     // 生成验证码
     generateCaptcha() {
@@ -509,7 +600,8 @@ export default {
 
 .captcha-container {
   display: flex;
-  gap: 10px;
+  gap: 16px;
+  align-items: center;
 }
 
 .captcha-input {
@@ -517,12 +609,16 @@ export default {
 }
 
 .captcha-image {
+  width: 120px;
+  height: 40px;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: #f5f7fa;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .form-options {

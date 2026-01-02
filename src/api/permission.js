@@ -20,7 +20,7 @@ export const permissionApi = {
   // 获取所有菜单
   getAllMenus() {
     return service({
-      url: '/permission/menus',
+      url: '/permission//all-menus',
       method: 'get'
     })
   },

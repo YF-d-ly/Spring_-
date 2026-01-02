@@ -110,6 +110,41 @@ const actions = {
     }
   },
 
+  // 邮箱验证码登录
+  async loginByCode({ commit, dispatch }, { email, code }) {
+    try {
+      const response = await service.post('/auth/login/code', {
+        email,
+        code
+      });
+      if (response.code === 200) {
+        const token = response.data.token;
+        const userInfo = {
+          userId: response.data.userId,
+          username: response.data.username,
+          roleId: response.data.roleId,
+          menus: response.data.menus,
+          warehouses: response.data.warehouses
+        };
+        commit('SET_TOKEN', token);
+        commit('SET_USER_INFO', userInfo);
+        dispatch('updateMenuTree', response.data.menus);
+        return Promise.resolve({
+          token,
+          user: userInfo
+        });
+      } else if (response.code === 401) {
+        throw new Error('未授权，请检查验证码');
+      } else {
+        const errorMessage = response.message || '验证码登录失败';
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      console.error('验证码登录失败:', error);
+      throw error;
+    }
+  },
+
   // 用户登出
   logout({ commit }) {
     commit('CLEAR_TOKEN')

@@ -21,6 +21,8 @@ VueRouter.prototype.replace = function replace(location, onResolve, onReject) {
 
 const routes = [
     { path: '/login', component: LoginPage },
+    { path: '/register', component: () => import('@/views/login/Register.vue') },
+    { path: '/forgot-password', component: () => import('@/views/login/unforget.vue') },
     {
         path: '/',
         component: LayoutPage,

@@ -10,6 +10,39 @@ export const userApi = {
       data
     })
   },
+  // 用户注册
+  register(data) {
+    return service({
+      url: '/auth/register',
+      method: 'post',
+      data
+    })
+  },
+  // 发送邮箱验证码（后端提供的 /code 接口）
+  sendEmailCode(data) {
+    // data: { email: string }
+    return service({
+      url: '/auth/code',
+      method: 'post',
+      params: data
+    })
+  },
+  // 忘记密码：发送验证码（邮箱或手机号，后端可自行兼容）
+  sendCaptcha(data) {
+    return service({
+      url: '/auth/send-captcha',
+      method: 'post',
+      data
+    })
+  },
+  // 忘记密码：使用验证码重置密码
+  resetPasswordByCaptcha(data) {
+    return service({
+      url: '/auth/reset-password',
+      method: 'post',
+      data
+    })
+  },
   // 获取用户列表
   getUserList(params) {
     return service({
