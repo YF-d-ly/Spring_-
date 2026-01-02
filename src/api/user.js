@@ -18,6 +18,14 @@ export const userApi = {
       params
     })
   },
+  // 获取用户名列表
+  getUserNameList() {
+    return service({
+      url: '/user/names',
+      method: 'get'
+    })
+  },
+
   // 添加用户
   addUser(data) {
     return service({
@@ -65,9 +73,9 @@ export const userApi = {
     })
   },
   // 获取个人信息
-  getProfile() {
+  getInfo(id) {
     return service({
-      url: '/user/profile',
+      url: `/user/${id}`,
       method: 'get'
     })
   },

@@ -201,14 +201,11 @@ export default {
       
       // 根据不同的操作类型执行不同的逻辑
       if (action.path) {
-        if (action.type) {
-          // 如果有类型，可以传递参数
-          this.$router.push({
-            path: action.path,
-            query: { type: action.type }
-          })
-        } else {
-          this.$router.push(action.path)
+        const target = action.type ? { path: action.path, query: { type: action.type } } : { path: action.path }
+        const samePath = target.path === this.$route.path
+        const sameQuery = JSON.stringify(target.query || {}) === JSON.stringify(this.$route.query || {})
+        if (!(samePath && sameQuery)) {
+          this.$router.push(target)
         }
       }
       

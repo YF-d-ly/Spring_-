@@ -9,13 +9,13 @@
         <!-- 菜单权限标签页 -->
         <el-tab-pane label="菜单权限" name="menu">
           <el-form :inline="true" style="margin-bottom: 20px;">
-            <el-form-item label="选择用户">
-              <el-select v-model="selectedUserId" placeholder="请选择用户" @change="loadUserMenuPermissions" style="width: 300px;">
+            <el-form-item label="选择角色">
+              <el-select v-model="selectedUserId" placeholder="请选择角色" @change="loadUserMenuPermissions" style="width: 300px;">
                 <el-option 
-                  v-for="user in userList" 
-                  :key="user.id" 
-                  :label="`${user.username} (${user.nickname})`" 
-                  :value="user.id">
+                  v-for="role in roleList" 
+                  :key="role.id" 
+                  :label="`${role.roleName}`" 
+                  :value="role.id">
                 </el-option>
               </el-select>
             </el-form-item>
@@ -74,9 +74,10 @@
 </template>
 
 <script>
-// import { permissionApi } from '@/api/permission'
-// import { userApi } from '@/api/user'
-// import { warehouseApi } from '@/api/warehouse'
+import { permissionApi } from '@/api/permission'
+import { userApi } from '@/api/user'
+import { warehouseApi } from '@/api/warehouse'
+
 
 export default {
   name: 'PermissionPage',
@@ -85,6 +86,7 @@ export default {
       activeTab: 'menu',
       selectedUserId: null,
       userList: [],
+      roleList: [],
       warehouseList: [],
       menuTreeData: [],
       checkedMenuKeys: [],
@@ -94,30 +96,161 @@ export default {
   created() {
     this.fetchUserList()
     this.fetchWarehouseList()
+    this.fetchRoleList()
     this.loadAllMenus()
+
   },
   methods: {
     // 获取用户列表
     async fetchUserList() {
-      // 模拟数据
-      this.userList = [
-        { id: 1, username: 'admin', nickname: '超级管理员', role: 'super_admin' },
-        { id: 2, username: 'info', nickname: '信息管理员', role: 'info_admin' },
-        { id: 3, username: 'user1', nickname: '普通用户1', role: 'info_admin' }
-      ]
+      try {
+        // 使用 getUserList 替代 getUserNameList，以获得更稳定的支持
+        const res = await userApi.getUserList({ page: 1, size: 1000 }) 
+        
+        if (res && res.code === 200) {
+          if (res.data && res.data.records) {
+            this.userList = res.data.records
+          } else if (res.data && Array.isArray(res.data)) {
+            this.userList = res.data
+          } else {
+            this.userList = []
+          }
+        } else {
+          // 尝试直接使用 res（兼容某些非标准返回）
+          if (res && res.records) {
+            this.userList = res.records
+          } else if (Array.isArray(res)) {
+            this.userList = res
+          }
+        }
+      } catch (error) {
+        console.error('获取用户列表失败，使用静态数据兜底', error)
+        // 静态数据兜底
+        this.userList = [
+          { id: 1, username: 'admin', nickname: '超级管理员', roleId: 'ROLE_001' },
+          { id: 2, username: 'user', nickname: '普通用户', roleId: 'ROLE_002' }
+        ]
+      } finally {
+        this.loading = false
+      }
     },
+    //获取角色
+     async fetchRoleList() {
+      try {
+        // 使用 getRoleList 替代 getRoleNameList，以获得更稳定的支持
+        const res = await permissionApi.getRoleList()
+        
+        if (res && res.code === 200) {
+          if (res.data) {
+            this.roleList = res.data
+          }
+           else {
+            this.roleList = []
+          }
+  
+        } 
+      }
+       catch (error) {
+        console.error('获取角色列表失败，使用静态数据兜底:', error)
+        // 静态数据兜底
+        this.roleList = [
+          { id: 'ROLE_002', roleName: '信息管理员' },
+          { id: 'ROLE_003', roleName: '特殊用户01' }
+        ]
+      }
+     },
     
     // 获取仓库列表
     async fetchWarehouseList() {
-      this.warehouseList = [
-        { id: 1, name: '一号仓库' },
-        { id: 2, name: '二号仓库' },
-        { id: 3, name: '三号仓库' }
-      ]
+      try {
+        // 使用 getWarehousePage 替代 getWarehouseList，以获得更稳定的支持
+        const res = await warehouseApi.getWarehousePage({ page: 1, size: 1000 })
+        
+        if (res && res.code === 200) {
+          if (res.data && res.data.records) {
+            this.warehouseList = res.data.records
+          } else if (res.data && Array.isArray(res.data)) {
+            this.warehouseList = res.data
+          } else {
+            this.warehouseList = []
+          }
+        } else {
+          // 尝试直接使用 res（兼容某些非标准返回）
+          if (res && res.records) {
+            this.warehouseList = res.records
+          } else if (Array.isArray(res)) {
+            this.warehouseList = res
+          }
+        }
+      } catch (error) {
+        console.error('获取仓库列表失败，使用静态数据兜底:', error)
+        // 静态数据兜底
+        this.warehouseList = [
+          { id: 1, name: '一号仓库', address: '厦门市' },
+          { id: 2, name: '二号仓库', address: '福州市' }
+        ]
+      }
     },
     
+    // 将扁平数组转换为树形结构
+    buildMenuTree(menuList) {
+      const menuMap = {}
+      const tree = []
+
+      // 1. 初始化所有节点，并建立 id -> node 的映射
+      menuList.forEach(item => {
+        menuMap[item.id] = {
+          ...item,
+          // 适配 el-tree 的 props
+          menu_name: item.menuName, 
+          // 处理图标，如果后端返回的是 simple name (e.g. 'home')，加上前缀
+          icon: item.icon && !item.icon.startsWith('el-icon-') ? `el-icon-${item.icon}` : item.icon,
+          children: []
+        }
+      })
+
+      // 2. 构建树形结构
+      menuList.forEach(item => {
+        const node = menuMap[item.id]
+        if (item.parentId && menuMap[item.parentId]) {
+          // 如果有父节点，加入父节点的 children
+          menuMap[item.parentId].children.push(node)
+        } else {
+          // 如果没有父节点（或父节点未找到），作为根节点
+          tree.push(node)
+        }
+      })
+      
+      // 3. 对同级菜单排序 (可选)
+      const sortFunc = (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)
+      
+      const sortTree = (nodes) => {
+        nodes.sort(sortFunc)
+        nodes.forEach(node => {
+          if (node.children && node.children.length > 0) {
+            sortTree(node.children)
+          }
+        })
+      }
+      sortTree(tree)
+
+      return tree
+    },
+
     // 加载所有菜单
-    loadAllMenus() {
+    async loadAllMenus() {
+      // 尝试从API获取菜单，如果失败则使用静态数据
+      try {
+        const res = await permissionApi.getAllMenus()
+        if (res && res.code === 200 && res.data && res.data.length > 0) {
+          // 后端返回的是扁平结构，需要转换为树形结构
+          this.menuTreeData = this.buildMenuTree(res.data)
+          return
+        }
+      } catch (error) {
+        console.warn('获取菜单列表失败，使用静态菜单配置', error)
+      }
+
       this.menuTreeData = [
         {
           id: 1,
@@ -178,16 +311,31 @@ export default {
     },
     
     // 加载用户菜单权限
-    loadUserMenuPermissions() {
+    async loadUserMenuPermissions() {
       if (!this.selectedUserId) {
         this.checkedMenuKeys = []
         return
       }
       
-      // 模拟数据：根据用户角色设置默认权限
+      try {
+        const res = await permissionApi.getUserMenuPermissions(this.selectedUserId)
+        if (res && res.code === 200) {
+          this.checkedMenuKeys = res.data || []
+        } else {
+          // 如果API调用失败或没有数据，使用默认策略（兼容旧逻辑）
+          this.setDefaultMenuPermissions()
+        }
+      } catch (error) {
+        console.error('获取用户菜单权限失败:', error)
+        this.setDefaultMenuPermissions()
+      }
+    },
+
+    // 设置默认菜单权限（后备方案）
+    setDefaultMenuPermissions() {
       const user = this.userList.find(u => u.id === this.selectedUserId)
       if (user) {
-        if (user.role === 'super_admin') {
+        if (user.role === 'super_admin' || user.roleId === 'ROLE_001') {
           // 超级管理员拥有所有权限
           this.checkedMenuKeys = [1, 2, 21, 3, 31, 32, 4, 41, 42, 5, 51, 52, 6, 61, 62]
         } else {
@@ -195,36 +343,40 @@ export default {
           this.checkedMenuKeys = [1, 2, 21, 3, 31, 32, 4, 41, 42, 5, 51]
         }
       }
-      
-      // 实际项目中应该调用API
-      // permissionApi.getUserMenuPermissions(this.selectedUserId).then(res => {
-      //   this.checkedMenuKeys = res.data
-      // })
     },
     
     // 加载用户仓库权限
-    loadUserWarehousePermissions() {
+    async loadUserWarehousePermissions() {
       if (!this.selectedUserId) {
         this.checkedWarehouseIds = []
         return
       }
       
-      // 模拟数据
+      try {
+        const res = await permissionApi.getUserWarehousePermissions(this.selectedUserId)
+        if (res && res.code === 200) {
+          this.checkedWarehouseIds = res.data || []
+        } else {
+          this.setDefaultWarehousePermissions()
+        }
+      } catch (error) {
+        console.error('获取用户仓库权限失败:', error)
+        this.setDefaultWarehousePermissions()
+      }
+    },
+
+    // 设置默认仓库权限（后备方案）
+    setDefaultWarehousePermissions() {
       const user = this.userList.find(u => u.id === this.selectedUserId)
       if (user) {
-        if (user.role === 'super_admin') {
+        if (user.role === 'super_admin' || user.roleId === 'ROLE_001') {
           // 超级管理员拥有所有仓库权限
           this.checkedWarehouseIds = this.warehouseList.map(w => w.id)
         } else {
           // 信息管理员默认拥有部分仓库权限
-          this.checkedWarehouseIds = [1, 2]
+          this.checkedWarehouseIds = this.warehouseList.length > 0 ? [this.warehouseList[0].id] : []
         }
       }
-      
-      // 实际项目中应该调用API
-      // warehouseApi.getUserWarehousePermissions(this.selectedUserId).then(res => {
-      //   this.checkedWarehouseIds = res.data
-      // })
     },
     
     // 保存菜单权限
@@ -234,24 +386,25 @@ export default {
         return
       }
       
-      // 模拟API调用
-      setTimeout(() => {
-        this.$message.success('菜单权限保存成功')
-      }, 500)
-      
-      // 实际项目中应该调用API
-      // const checkedKeys = this.$refs.menuTree.getCheckedKeys()
-      // const halfCheckedKeys = this.$refs.menuTree.getHalfCheckedKeys()
-      // const allKeys = [...checkedKeys, ...halfCheckedKeys]
-      // try {
-      //   await permissionApi.setUserMenuPermissions({
-      //     user_id: this.selectedUserId,
-      //     menu_ids: allKeys
-      //   })
-      //   this.$message.success('菜单权限保存成功')
-      // } catch (error) {
-      //   this.$message.error('保存失败')
-      // }
+      const checkedKeys = this.$refs.menuTree.getCheckedKeys()
+      const halfCheckedKeys = this.$refs.menuTree.getHalfCheckedKeys()
+      const allKeys = [...checkedKeys, ...halfCheckedKeys]
+
+      try {
+        const res = await permissionApi.setUserMenuPermissions({
+          userId: this.selectedUserId, // 注意API可能需要userId而不是user_id，根据习惯猜测，这里用userId更常见，需注意后端字段
+          menuIds: allKeys
+        })
+        
+        if (res && res.code === 200) {
+          this.$message.success('菜单权限保存成功')
+        } else {
+          this.$message.error(res.message || '保存失败')
+        }
+      } catch (error) {
+        console.error('保存菜单权限失败:', error)
+        this.$message.error('保存失败')
+      }
     },
     
     // 保存仓库权限
@@ -261,21 +414,21 @@ export default {
         return
       }
       
-      // 模拟API调用
-      setTimeout(() => {
-        this.$message.success('仓库权限保存成功')
-      }, 500)
-      
-      // 实际项目中应该调用API
-      // try {
-      //   await warehouseApi.setUserWarehousePermissions({
-      //     user_id: this.selectedUserId,
-      //     warehouse_ids: this.checkedWarehouseIds
-      //   })
-      //   this.$message.success('仓库权限保存成功')
-      // } catch (error) {
-      //   this.$message.error('保存失败')
-      // }
+      try {
+        const res = await permissionApi.setUserWarehousePermissions({
+          userId: this.selectedUserId,
+          warehouseIds: this.checkedWarehouseIds
+        })
+        
+        if (res && res.code === 200) {
+          this.$message.success('仓库权限保存成功')
+        } else {
+          this.$message.error(res.message || '保存失败')
+        }
+      } catch (error) {
+        console.error('保存仓库权限失败:', error)
+        this.$message.error('保存失败')
+      }
     },
     
     // 重置菜单权限

@@ -185,7 +185,7 @@ const actions = {
         id: menu.id,
         menu_name: menu.menuName,
         menu_path: menu.menuPath,
-        icon: menu.icon ? `el-icon-${menu.icon}` : 'el-icon-menu',
+        icon: menu.icon ? (menu.icon.startsWith('el-icon-') ? menu.icon : `el-icon-${menu.icon}`) : 'el-icon-menu',
         children: []
       };
 
@@ -205,7 +205,7 @@ const actions = {
           id: menu.id,
           menu_name: menu.menuName,
           menu_path: menu.menuPath,
-          icon: menu.icon ? `el-icon-${menu.icon}` : 'el-icon-menu'
+          icon: menu.icon ? (menu.icon.startsWith('el-icon-') ? menu.icon : `el-icon-${menu.icon}`) : 'el-icon-menu'
         };
         menuMap[menu.parentId].children.push(convertedMenu);
       }

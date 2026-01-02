@@ -7,6 +7,18 @@ import store from '@/stores'
 
 Vue.use(VueRouter)
 
+// 全局拦截重复导航错误（避免 Uncaught runtime errors 遮罩）
+const originalPush = VueRouter.prototype.push
+VueRouter.prototype.push = function push(location, onResolve, onReject) {
+    if (onResolve || onReject) return originalPush.call(this, location, onResolve, onReject)
+    return originalPush.call(this, location).catch(err => err)
+}
+const originalReplace = VueRouter.prototype.replace
+VueRouter.prototype.replace = function replace(location, onResolve, onReject) {
+    if (onResolve || onReject) return originalReplace.call(this, location, onResolve, onReject)
+    return originalReplace.call(this, location).catch(err => err)
+}
+
 const routes = [
     { path: '/login', component: LoginPage },
     {
@@ -39,9 +51,15 @@ const router = new VueRouter({
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-    const { token } = store.state.user
+    const { token, menuTree, userInfo } = store.state.user
     const isSuperAdmin = store.getters['user/isSuperAdmin']
     const isAdmin = store.getters['user/isAdmin']
+
+    // 页面刷新后，如果 Vuex 中的 menuTree 为空，但 localStorage 中的 userInfo 有菜单数据
+    // 则重新生成菜单树，防止侧边栏消失
+    if (token && (!menuTree || menuTree.length === 0) && userInfo && userInfo.menus) {
+        store.dispatch('user/updateMenuTree', userInfo.menus)
+    }
 
     // 如果访问登录页且已登录，重定向到仪表盘
     if (to.path === '/login' && token) {

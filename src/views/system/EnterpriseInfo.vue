@@ -18,11 +18,14 @@
         <el-form-item label="具体地址" prop="address">
           <el-input v-model="enterpriseForm.address" placeholder="请输入企业地址"></el-input>
         </el-form-item>
-        <el-form-item label="联系人" prop="contact_person">
-          <el-input v-model="enterpriseForm.contact_person" placeholder="请输入联系人"></el-input>
+        <el-form-item label="联系人" prop="person">
+          <el-input v-model="enterpriseForm.contact" placeholder="请输入联系人"></el-input>
         </el-form-item>
-        <el-form-item label="联系方式" prop="contact_phone">
-          <el-input v-model="enterpriseForm.contact_phone" placeholder="请输入联系方式"></el-input>
+        <el-form-item label="联系方式" prop="phone">
+          <el-input v-model="enterpriseForm.phone" placeholder="请输入联系方式"></el-input>
+        </el-form-item>
+             <el-form-item label="邮箱" prop="email">
+          <el-input v-model="enterpriseForm.email" placeholder="请输入邮箱"></el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="saveEnterpriseInfo">保存</el-button>
@@ -34,16 +37,13 @@
 </template>
 
 <script>
+import { companyApi } from '@/api/company';
+
 export default {
   name: 'EnterpriseInfoPage',
   data() {
     return {
-      enterpriseForm: {
-        name: '',
-        address: '',
-        contact_person: '',
-        contact_phone: ''
-      },
+      enterpriseForm:{},
       enterpriseRules: {
         name: [
           { required: true, message: '请输入企业名称', trigger: 'blur' }
@@ -51,12 +51,16 @@ export default {
         address: [
           { required: true, message: '请输入企业地址', trigger: 'blur' }
         ],
-        contact_person: [
+        contact: [
           { required: true, message: '请输入联系人', trigger: 'blur' }
         ],
-        contact_phone: [
+        phone: [
           { required: true, message: '请输入联系方式', trigger: 'blur' },
           { pattern: /^1[3-9]\d{9}$|^(\d{3,4}-?)?\d{7,8}$/, message: '请输入正确的手机号码或电话号码', trigger: 'blur' }
+        ],
+        email: [
+          { required: true, message: '请输入邮箱', trigger: 'blur' },
+          { pattern: /^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$/, message: '请输入正确的邮箱地址', trigger: 'blur' }
         ]
       }
     }
@@ -67,17 +71,12 @@ export default {
   methods: {
     // 获取企业信息
     async fetchEnterpriseInfo() {
-      // 模拟API调用
-      setTimeout(() => {
-        // 模拟企业数据
-        this.enterpriseForm = {
-          id: 1,
-          name: '厦门理工学院仓储有限公司',
-          address: '福建省厦门市集美区理工路600号',
-          contact_person: '李经理',
-          contact_phone: '0592-1234567'
-        };
-      }, 300);
+      try {
+        const res = await companyApi.getCompanyInfo();
+        this.enterpriseForm = res.data;
+      } catch (error) {
+        this.$message.error('获取企业信息失败');
+      }
     },
     
     // 保存企业信息

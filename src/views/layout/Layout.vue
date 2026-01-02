@@ -6,42 +6,42 @@
         <span v-if="!isCollapse" class="logo-text">仓储管理系统</span>
         <span v-else class="logo-icon">仓</span>
       </div>
-      <el-menu
-        :default-active="$route.path"
-        :collapse="isCollapse"
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409EFF"
-        class="el-menu-vertical"
-        :unique-opened="true"
-      >
-        <template v-for="item in menuList">
-          <el-menu-item 
-            v-if="!item.children" 
-            :index="item.menu_path" 
-            :key="`${item.id}_item`" 
-            @click="$router.push(item.menu_path)"
+          <el-menu
+            :default-active="$route.path"
+            :collapse="isCollapse"
+            background-color="#304156"
+            text-color="#bfcbd9"
+            active-text-color="#409EFF"
+            class="el-menu-vertical"
+            :unique-opened="true"
           >
-            <i :class="item.icon"></i>
-            <span slot="title">{{ item.menu_name }}</span>
-          </el-menu-item>
-          <el-submenu v-else :index="String(item.id)" :key="`${item.id}_submenu`">
-            <template slot="title">
-              <i :class="item.icon"></i>
-              <span>{{ item.menu_name }}</span>
+            <template v-for="item in menuList">
+              <el-menu-item 
+                v-if="!item.children" 
+                :index="item.menu_path" 
+                :key="`${item.id}_item`" 
+                @click="navigateTo(item.menu_path)"
+              >
+                <i :class="getIcon(item)" class="menu-icon"></i>
+                <span slot="title">{{ item.menu_name }}</span>
+              </el-menu-item>
+              <el-submenu v-else :index="String(item.id)" :key="`${item.id}_submenu`">
+                <template slot="title">
+                  <i :class="getIcon(item)" class="menu-icon"></i>
+                  <span>{{ item.menu_name }}</span>
+                </template>
+                <el-menu-item
+                  v-for="child in item.children"
+                  :key="child.id"
+                  :index="child.menu_path"
+                  @click="navigateTo(child.menu_path)"
+                >
+                  <i :class="getIcon(child)" class="menu-icon"></i>
+                  <span slot="title">{{ child.menu_name }}</span>
+                </el-menu-item>
+              </el-submenu>
             </template>
-            <el-menu-item
-              v-for="child in item.children"
-              :key="child.id"
-              :index="child.menu_path"
-              @click="$router.push(child.menu_path)"
-            >
-              <i :class="child.icon"></i>
-              <span slot="title">{{ child.menu_name }}</span>
-            </el-menu-item>
-          </el-submenu>
-        </template>
-      </el-menu>
+          </el-menu>
     </el-aside>
 
     <!-- 主内容区域 -->
@@ -104,8 +104,8 @@
       </el-main>
     </el-container>
     
-    <!-- 快捷操作面板 -->
-    <QuickActionsPanel />
+    <!-- 快捷操作面板
+    <QuickActionsPanel /> -->
 
 
     
@@ -164,6 +164,36 @@ export default {
     toggleCollapse() {
       this.isCollapse = !this.isCollapse
     },
+    getIcon(entry) {
+      const raw = entry.icon
+      const normalized = raw ? (raw.startsWith('el-icon-') ? raw : `el-icon-${raw}`) : ''
+      const allowed = [
+        's-home','office-building','goods','takeaway-box','data-line','setting',
+        'document','position','list','menu','user','key','bell','message','switch-button','s-unfold','s-fold','sunny','moon'
+      ]
+      if (normalized) {
+        const name = normalized.replace('el-icon-','')
+        if (allowed.includes(name)) return normalized
+      }
+      const p = entry.menu_path || ''
+      const n = entry.menu_name || ''
+      if (p.startsWith('/dashboard') || n.includes('首页')) return 'el-icon-s-home'
+      if (p.includes('/warehouse') || n.includes('仓库')) return 'el-icon-menu'
+      if (p.includes('/goods') || n.includes('商品')) return 'el-icon-goods'
+      if (p.includes('/stock') || n.includes('库存')) return 'el-icon-document'
+      if (p.includes('/report') || n.includes('报表')) return 'el-icon-s-data'
+      if (p.includes('/system') || n.includes('系统')) return 'el-icon-setting'
+      return 'el-icon-menu'
+    },
+    navigateTo(target) {
+      const route = typeof target === 'string' ? { path: target } : target
+      const samePath = route.path === this.$route.path
+      const sameQuery = JSON.stringify(route.query || {}) === JSON.stringify(this.$route.query || {})
+      if (samePath && sameQuery) {
+        return
+      }
+      this.$router.push(route)
+    },
     handleCommand(command) {
       if (command === 'logout') {
         this.$confirm('确定要退出登录吗？', '提示', {
@@ -176,7 +206,7 @@ export default {
           this.$router.push('/login')
         }).catch(() => {})
       } else if (command === 'profile') {
-        this.$router.push('/system/profile')
+        this.navigateTo('/system/profile')
       }
     }
   }
@@ -340,6 +370,11 @@ export default {
   margin-right: 5px;
   font-size: 14px;
   color: #303133;
+}
+
+.menu-icon {
+  margin-right: 8px;
+  font-size: 16px;
 }
 
 .main-content {
