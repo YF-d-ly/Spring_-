@@ -52,11 +52,11 @@
         <el-table-column label="图片" width="100">
           <template slot-scope="scope">
             <el-image 
-              v-if="scope.row.image"
-              :src="scope.row.image" 
+              v-if="scope.row.imageUrl"
+              :src="scope.row.imageUrl" 
               style="width: 60px; height: 60px;"
               fit="cover"
-              :preview-src-list="[scope.row.image]">
+              :preview-src-list="[scope.row.imageUrl]">
             </el-image>
             <span v-else>无图片</span>
           </template>
@@ -152,7 +152,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="货品图片" prop="image">
+        <el-form-item label="货品图片" prop="imageUrl">
           <el-upload
             class="avatar-uploader"
             action="#"
@@ -160,11 +160,11 @@
             :before-upload="beforeUpload"
             :http-request="handleUpload"
           >
-            <img v-if="goodsForm.image" :src="goodsForm.image" class="avatar">
+            <img v-if="goodsForm.imageUrl" :src="goodsForm.imageUrl" class="avatar">
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
           <div style="margin-top: 10px;">
-            <el-button size="small" @click="removeImage" v-if="goodsForm.image">删除图片</el-button>
+            <el-button size="small" @click="removeImage" v-if="goodsForm.imageUrl">删除图片</el-button>
           </div>
         </el-form-item>
         <el-form-item label="描述" prop="description">
@@ -188,6 +188,7 @@
 import { goodsApi } from '@/api/goods'
 import { categoryApi } from '@/api/category'
 import { warehouseApi } from '@/api/warehouse'  // 新增导入仓库API
+import service from '@/api/interpter/request' // 修正导入路径
 
 export default {
   name: 'GoodListPage',
@@ -214,7 +215,7 @@ export default {
         warehouseId: null, // 修改为驼峰命名
         price: 0,
         stock: 0,
-        image: '',
+        imageUrl: '', // 修改为 imageUrl，对应后端 DTO
         description: ''
       },
       goodsRules: {
@@ -353,11 +354,11 @@ export default {
       this.goodsForm = {
         id: null,
         name: '',
-        category_id: null,
-        warehouse_id: null,
+        categoryId: null,
+        warehouseId: null,
         price: 0,
         stock: 0,
-        image: '',
+        imageUrl: '',
         description: ''
       }
       this.$nextTick(() => {
@@ -440,20 +441,38 @@ export default {
     },
     
     // 处理上传
-    handleUpload(options) {
+    async handleUpload(options) {
       const file = options.file
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        // 模拟上传成功，实际项目中应该调用API
-        this.goodsForm.image = e.target.result
-        this.$message.success('图片上传成功')
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      try {
+        // 尝试使用 /file/upload 接口 (改回单数，因为用户可能使用的是单数)
+        // 或者 /common/upload
+        const res = await service({
+          url: '/file/upload', 
+          method: 'post',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        })
+        
+        if (res.code === 200) {
+          this.goodsForm.imageUrl = res.data 
+          this.$message.success('图片上传成功')
+        } else {
+          this.$message.error(res.message || '图片上传失败')
+        }
+      } catch (error) {
+        console.error('上传出错:', error)
+        this.$message.error('图片上传出错，请检查后端接口')
       }
-      reader.readAsDataURL(file)
     },
     
     // 删除图片
     removeImage() {
-      this.goodsForm.image = ''
+      this.goodsForm.imageUrl = ''
     },
     
     // 分页相关方法

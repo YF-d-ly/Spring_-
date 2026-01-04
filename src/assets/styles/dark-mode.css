@@ -83,16 +83,16 @@ body.dark-mode .el-table--striped .el-table__body tr.el-table__row--striped td {
   background-color: #111827 !important;
 }
 
-body.dark-mode .el-table--enable-row-hover .el-table__body tr:hover > td {
+body.dark-mode .el-table--enable-row-hover .el-table__body tr:hover>td {
   background-color: #374151 !important;
 }
 
-body.dark-mode .el-table__row.current-row > td {
-  background-color: rgba(64, 158, 255, 0.2) !important;
+body.dark-mode .el-table__row.current-row>td {
+  background-color: #374151 !important;
 }
 
-body.dark-mode .el-table__row.current-row:hover > td {
-  background-color: rgba(64, 158, 255, 0.3) !important;
+body.dark-mode .el-table__row.current-row:hover>td {
+  background-color: #4b5563 !important;
 }
 
 /* Element UI 表单 */
@@ -251,8 +251,8 @@ body.dark-mode .el-menu-item:hover {
 }
 
 body.dark-mode .el-menu-item.is-active {
-  background-color: rgba(64, 158, 255, 0.2) !important;
-  color: #409EFF !important;
+  background-color: #374151 !important;
+  color: #ffffff !important;
 }
 
 body.dark-mode .el-menu-item:active {
@@ -427,8 +427,8 @@ body.dark-mode ::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
 
-/* 登录页面 */
-body.dark-mode .login-container {
+/* 登录页面 - 已在 Login.vue 中单独处理，此处移除以避免冲突 */
+/* body.dark-mode .login-container {
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
 }
 
@@ -447,7 +447,7 @@ body.dark-mode .login-card-header h2 {
 
 body.dark-mode .login-card-header p {
   color: #9ca3af !important;
-}
+} */
 
 /* 输入框占位符 */
 body.dark-mode .el-input__inner::placeholder {
@@ -520,7 +520,7 @@ body.dark-mode .el-tree-node__content:hover {
   background-color: #374151 !important;
 }
 
-body.dark-mode .el-tree-node.is-current > .el-tree-node__content {
+body.dark-mode .el-tree-node.is-current>.el-tree-node__content {
   background-color: rgba(64, 158, 255, 0.2) !important;
   color: #409EFF !important;
 }
@@ -989,3 +989,122 @@ body.dark-mode .el-table__footer td {
   border-top-color: #374151 !important;
 }
 
+/* =========================================
+   登录页面夜间模式适配
+   ========================================= */
+
+/* 登录卡片 - 深色背景 */
+body.dark-mode .login-card {
+  background: rgba(31, 41, 55, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+body.dark-mode .card-header h3 {
+  color: #f3f4f6 !important;
+}
+
+/* 登录页输入框 */
+body.dark-mode .login-container .el-input__inner {
+  background-color: rgba(17, 24, 39, 0.7) !important;
+  border-color: rgba(75, 85, 99, 0.5) !important;
+  color: #f9fafb !important;
+  transition: all 0.3s ease;
+}
+
+body.dark-mode .login-container .el-input__inner:focus {
+  border-color: #3b82f6 !important;
+  background-color: rgba(17, 24, 39, 0.9) !important;
+}
+
+body.dark-mode .login-container .el-input__inner::placeholder {
+  color: #9ca3af !important;
+}
+
+body.dark-mode .login-container .el-input__prefix {
+  color: #9ca3af !important;
+}
+
+/* 登录按钮 */
+body.dark-mode .login-button {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .login-button:hover {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+/* 验证码图片容器 */
+body.dark-mode .captcha-image {
+  border-color: rgba(75, 85, 99, 0.5) !important;
+  background-color: rgba(31, 41, 55, 0.5) !important;
+}
+
+/* 底部选项 (记住密码等) */
+body.dark-mode .form-options {
+  color: #d1d5db !important;
+}
+
+body.dark-mode .login-container .el-checkbox {
+  color: #d1d5db !important;
+}
+
+body.dark-mode .login-container .el-checkbox__label {
+  color: #d1d5db !important;
+}
+
+body.dark-mode .forgot-password,
+body.dark-mode .register-link a {
+  color: #60a5fa !important;
+}
+
+body.dark-mode .forgot-password:hover,
+body.dark-mode .register-link a:hover {
+  color: #93c5fd !important;
+}
+
+/* 微信登录 */
+body.dark-mode .wechat-login {
+  color: #60a5fa !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+  background-color: transparent !important;
+}
+
+body.dark-mode .wechat-login:hover {
+  background-color: rgba(96, 165, 250, 0.1) !important;
+  color: #93c5fd !important;
+  border-color: #93c5fd !important;
+}
+
+/* 注册链接文本 */
+body.dark-mode .register-link {
+  color: #9ca3af !important;
+}
+
+/* 登录方式切换 (Radio Group) */
+body.dark-mode .login-container .el-radio-button__inner {
+  background-color: rgba(31, 41, 55, 0.5) !important;
+  border-color: rgba(75, 85, 99, 0.5) !important;
+  color: #d1d5db !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode .login-container .el-radio-button:first-child .el-radio-button__inner {
+  border-left-color: rgba(75, 85, 99, 0.5) !important;
+}
+
+body.dark-mode .login-container .el-radio-button__orig-radio:checked+.el-radio-button__inner {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+  box-shadow: -1px 0 0 0 #3b82f6 !important;
+}
+
+/* 页脚 */
+body.dark-mode .login-footer {
+  color: rgba(228, 231, 237, 0.6) !important;
+}

@@ -13,7 +13,7 @@ export const goodsApi = {
     // 获取货品列表（分页）
     getGoodsList(params) {
         return service({
-            url: '/goods/page',  // 移除 /api 前缀，因为代理会自动添加
+            url: '/goods/page-with-permission',  // 移除 /api 前缀，因为代理会自动添加
             method: 'get',
             params
         })

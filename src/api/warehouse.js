@@ -20,15 +20,23 @@ export const warehouseApi = {
   // 删除仓库
   deleteWarehouse(id) {
     return service({
-      url: '/warehouse/' + id,
+      url: '/warehouse' + id,
       method: 'delete'
     })
   },
   // 添加仓库
   addWarehouse(data) {
     return service({
-      url: '/warehouse',
+      url: '/warehouse/add',
       method: 'post',
+      data
+    })
+  },
+  // 更新仓库
+  updateWarehouse(data) {
+    return service({
+      url: '/warehouse',
+      method: 'put',
       data
     })
   },

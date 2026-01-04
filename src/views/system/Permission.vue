@@ -355,13 +355,16 @@ export default {
       try {
         const res = await permissionApi.getUserWarehousePermissions(this.selectedUserId)
         if (res && res.code === 200) {
-          this.checkedWarehouseIds = res.data || []
+          // 确保 checkedWarehouseIds 只是 ID 数组，而不是对象数组
+          this.checkedWarehouseIds = (res.data || []).map(item => {
+            return typeof item === 'object' ? item.id : item
+          })
         } else {
-          this.setDefaultWarehousePermissions()
+          this.checkedWarehouseIds = []
         }
       } catch (error) {
         console.error('获取用户仓库权限失败:', error)
-        this.setDefaultWarehousePermissions()
+        this.checkedWarehouseIds = []
       }
     },
 
@@ -414,10 +417,15 @@ export default {
         return
       }
       
+      // 确保只发送ID数组，防止脏数据包含对象
+      const cleanWarehouseIds = this.checkedWarehouseIds.map(item => {
+        return typeof item === 'object' ? item.id : item
+      })
+
       try {
         const res = await permissionApi.setUserWarehousePermissions({
           userId: this.selectedUserId,
-          warehouseIds: this.checkedWarehouseIds
+          warehouseIds: cleanWarehouseIds
         })
         
         if (res && res.code === 200) {

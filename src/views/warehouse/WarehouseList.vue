@@ -261,7 +261,12 @@ export default {
         
         this.dialogVisible = false
       } catch (error) {
-        this.$message.error('表单验证失败')
+        console.error('保存仓库失败:', error)
+        if (error === false) {
+           this.$message.error('表单验证失败')
+        } else {
+           this.$message.error('保存失败，请稍后重试')
+        }
       }
     },
     

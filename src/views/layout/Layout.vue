@@ -9,9 +9,9 @@
           <el-menu
             :default-active="$route.path"
             :collapse="isCollapse"
-            background-color="#304156"
-            text-color="#bfcbd9"
-            active-text-color="#409EFF"
+            :background-color="isDarkMode ? '#1f2937' : '#4a5f57'"
+            :text-color="isDarkMode ? '#bfcbd9' : '#bfcbd9'"
+            :active-text-color="isDarkMode ? '#ffffff' : '#ffffff'"
             class="el-menu-vertical"
             :unique-opened="true"
           >
@@ -135,7 +135,8 @@ export default {
   data() {
     return {
       isCollapse: false,
-      userAvatar: ''
+      userAvatar: '',
+      showQuickActions: false
     }
   },
   computed: {
@@ -208,6 +209,9 @@ export default {
       } else if (command === 'profile') {
         this.navigateTo('/system/profile')
       }
+    },
+    handleCloseQuickActions() {
+      this.showQuickActions = false
     }
   }
 }
@@ -220,7 +224,7 @@ export default {
 }
 
 .sidebar {
-  background-color: #304156;
+  background-color: #4a5f57;
   transition: width 0.3s;
   position: fixed;
   left: 0;
@@ -235,7 +239,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #2b3a4a;
+  background-color: #3e4e48;
   color: #fff;
   font-size: 18px;
   font-weight: bold;
@@ -311,7 +315,7 @@ export default {
 }
 
 .collapse-icon:hover {
-  color: #409EFF;
+  color: #6e9387;
 }
 
 .breadcrumb {
@@ -332,7 +336,7 @@ export default {
 }
 
 .header-badge:hover {
-  color: #409EFF;
+  color: #6e9387;
 }
 
 .theme-toggle {
@@ -344,7 +348,7 @@ export default {
 }
 
 .theme-toggle:hover {
-  color: #409EFF;
+  color: #6e9387;
   transform: rotate(20deg);
 }
 
@@ -363,7 +367,7 @@ export default {
 
 .user-avatar {
   margin-right: 8px;
-  background-color: #409EFF;
+  background-color: #6e9387;
 }
 
 .user-name {
@@ -410,9 +414,9 @@ export default {
   display: inline-block;
 }
 
-/* 侧边栏菜单样式优化 */
-.el-menu {
-  background-color: #304156 !important;
+/* 侧边栏菜单样式优化 - 仅在非夜间模式下应用 Morandi Green 主题 */
+body:not(.dark-mode) .el-menu {
+  background-color: #4a5f57 !important;
 }
 
 .el-menu-item,
@@ -421,21 +425,21 @@ export default {
   line-height: 50px;
 }
 
-.el-menu-item:hover,
-.el-submenu__title:hover {
-  background-color: rgba(64, 158, 255, 0.1) !important;
+body:not(.dark-mode) .el-menu-item:hover,
+body:not(.dark-mode) .el-submenu__title:hover {
+  background-color: rgba(110, 147, 135, 0.4) !important;
 }
 
-.el-menu-item.is-active {
-  background-color: rgba(64, 158, 255, 0.2) !important;
-  color: #409EFF !important;
+body:not(.dark-mode) .el-menu-item.is-active {
+  background-color: #6e9387 !important;
+  color: #ffffff !important;
 }
 
-.el-submenu .el-menu-item {
-  background-color: #1f2d3d !important;
+body:not(.dark-mode) .el-submenu .el-menu-item {
+  background-color: #3e4e48 !important;
 }
 
-.el-submenu .el-menu-item:hover {
-  background-color: rgba(64, 158, 255, 0.1) !important;
+body:not(.dark-mode) .el-submenu .el-menu-item:hover {
+  background-color: rgba(110, 147, 135, 0.4) !important;
 }
 </style>

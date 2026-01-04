@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <!-- 背景层 -->
-    <div class="login-background">
+    <div class="login-background" :style="bgStyle">
       <div class="background-overlay"></div>
     </div>
     
@@ -209,7 +209,8 @@ export default {
       captchaText: '',
       sendingCode: false,
       codeCountdown: 0,
-      codeTimer: null
+      codeTimer: null,
+      bgStyle: {}
     }
   },
   computed: {
@@ -347,41 +348,12 @@ export default {
       }
       this.captchaText = captcha
       
-      // 绘制背景
-      ctx.fillStyle = this.getRandomColor(180, 240)
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      // 绘制背景 (透明背景，移除填充)
+      // ctx.fillStyle = this.getRandomColor(180, 240)
+      // ctx.fillRect(0, 0, canvas.width, canvas.height)
       
-      // 绘制干扰线
+      // 绘制干扰线 (使用较亮的颜色)
       for (let i = 0; i < 4; i++) {
-        ctx.strokeStyle = this.getRandomColor(100, 180)
-        ctx.beginPath()
-        ctx.moveTo(
-          Math.floor(Math.random() * canvas.width),
-          Math.floor(Math.random() * canvas.height)
-        )
-        ctx.lineTo(
-          Math.floor(Math.random() * canvas.width),
-          Math.floor(Math.random() * canvas.height)
-        )
-        ctx.stroke()
-      }
-      
-      // 绘制验证码字符
-      ctx.textBaseline = 'middle'
-      for (let i = 0; i < captcha.length; i++) {
-        const char = captcha[i]
-        ctx.fillStyle = this.getRandomColor(0, 100)
-        ctx.font = `${Math.floor(canvas.height * 0.8)}px Arial`
-        ctx.fillText(
-          char,
-          (canvas.width / captcha.length) * i + 5,
-          canvas.height / 2,
-          canvas.width / captcha.length - 5
-        )
-      }
-      
-      // 添加扰动
-      for (let i = 0; i < 30; i++) {
         ctx.strokeStyle = this.getRandomColor(150, 220)
         ctx.beginPath()
         ctx.moveTo(
@@ -394,6 +366,37 @@ export default {
         )
         ctx.stroke()
       }
+      
+      // 绘制验证码字符 (使用亮色字体以适配深色背景)
+      ctx.textBaseline = 'middle'
+      for (let i = 0; i < captcha.length; i++) {
+        const char = captcha[i]
+        ctx.fillStyle = this.getRandomColor(200, 255) // 亮色文字
+        ctx.font = `bold ${Math.floor(canvas.height * 0.8)}px Arial`
+        ctx.fillText(
+          char,
+          (canvas.width / captcha.length) * i + 5,
+          canvas.height / 2 + 2, // 微调垂直位置
+          canvas.width / captcha.length - 5
+        )
+      }
+      
+      // 添加扰动 (亮色)
+      for (let i = 0; i < 30; i++) {
+        ctx.strokeStyle = this.getRandomColor(150, 255)
+        ctx.globalAlpha = 0.3 // 增加透明度
+        ctx.beginPath()
+        ctx.moveTo(
+          Math.floor(Math.random() * canvas.width),
+          Math.floor(Math.random() * canvas.height)
+        )
+        ctx.lineTo(
+          Math.floor(Math.random() * canvas.width),
+          Math.floor(Math.random() * canvas.height)
+        )
+        ctx.stroke()
+        ctx.globalAlpha = 1.0 // 恢复透明度
+      }
     },
     
     // 生成随机颜色
@@ -402,9 +405,27 @@ export default {
       const g = Math.floor(Math.random() * (max - min) + min)
       const b = Math.floor(Math.random() * (max - min) + min)
       return `rgb(${r}, ${g}, ${b})`
+    },
+    // 设置随机背景图
+    setRandomBackground() {
+      const images = [
+        'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=2560&auto=format&fit=crop', // 荷花/自然
+        'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2560&auto=format&fit=crop', // 山水/湖泊
+        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2560&auto=format&fit=crop', // 森林/阳光
+        'https://images.unsplash.com/photo-1501854140884-074bf86ed91c?q=80&w=2560&auto=format&fit=crop', // 天空/云彩
+        'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2560&auto=format&fit=crop', // 群山
+        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2560&auto=format&fit=crop'  // 溪流/风景
+      ]
+      const randomImage = images[Math.floor(Math.random() * images.length)]
+      this.bgStyle = {
+        backgroundImage: `url('${randomImage}'), linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%)`
+      }
     }
   },
   mounted() {
+    // 设置随机背景
+    this.setRandomBackground()
+    
     // 检查是否有记住的账号
     const rememberedUsername = localStorage.getItem('rememberedUsername')
     if (rememberedUsername) {
@@ -435,11 +456,11 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
+  /* 默认背景 (渐变) */
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%);
-  background-image: 
-    radial-gradient(circle at 20% 50%, rgba(30, 60, 114, 0.8) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(46, 82, 152, 0.6) 0%, transparent 50%),
-    linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e8ba3 100%);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   z-index: 1;
 }
 
@@ -449,9 +470,9 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    linear-gradient(180deg, rgba(30, 60, 114, 0.3) 0%, transparent 30%),
-    linear-gradient(0deg, rgba(46, 82, 152, 0.2) 0%, transparent 40%);
+  /* 加深遮罩，确保文字在风景图上清晰可见 */
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
 }
 
 /* 内容层 */
@@ -563,6 +584,33 @@ export default {
   padding: 40px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+  transition: background 0.3s, border 0.3s, box-shadow 0.3s;
+}
+
+/* 主题切换按钮 */
+.theme-switch {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  color: white;
+  font-size: 20px;
+  transition: all 0.3s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-switch:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(30deg);
 }
 
 .card-decoration {
@@ -769,23 +817,5 @@ export default {
     gap: 10px;
     font-size: 12px;
   }
-}
-
-/* 夜间模式适配 */
-body.dark-mode .login-background {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-}
-
-body.dark-mode .login-card {
-  background: rgba(31, 41, 55, 0.95) !important;
-  border: 1px solid #374151 !important;
-}
-
-body.dark-mode .card-header h3 {
-  color: #e4e7ed !important;
-}
-
-body.dark-mode .login-footer {
-  color: rgba(228, 231, 237, 0.8) !important;
 }
 </style>

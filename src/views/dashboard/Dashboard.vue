@@ -33,18 +33,18 @@
             <el-button type="text" @click="$router.push('/stock/log')">查看全部</el-button>
           </div>
           <el-table :data="recentLogs" style="width: 100%" v-loading="loading">
-            <el-table-column prop="goods_name" label="货品名称" width="150"></el-table-column>
-            <el-table-column prop="warehouse_name" label="仓库" width="100"></el-table-column>
+            <el-table-column prop="goodsName" label="货品名称" width="150" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="warehouseName" label="仓库" width="120" show-overflow-tooltip></el-table-column>
             <el-table-column prop="type" label="类型" width="80">
               <template slot-scope="scope">
-                <el-tag :type="scope.row.type === 'inbound' ? 'success' : 'warning'" size="small">
-                  {{ scope.row.type === 'inbound' ? '入库' : '出库' }}
+                <el-tag :type="scope.row.type === 1 ? 'success' : 'warning'" size="small">
+                  {{ scope.row.type === 1 ? '入库' : '出库' }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="quantity" label="数量" width="80"></el-table-column>
-            <el-table-column prop="operator" label="操作人" width="100"></el-table-column>
-            <el-table-column prop="operate_time" label="时间" width="150"></el-table-column>
+            <el-table-column prop="num" label="数量" width="80"></el-table-column>
+            <el-table-column prop="operator" label="操作人" min-width="100" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="createTime" label="时间" width="160" show-overflow-tooltip></el-table-column>
             <el-table-column label="操作" width="80">
               <template slot-scope="scope">
                 <el-button type="text" size="small" @click="viewDetail(scope.row)">
@@ -126,7 +126,9 @@
 
 <script>
 import * as echarts from 'echarts'
-// import { stockApi } from '@/api/stock'
+import { stockApi } from '@/api/stock'
+import { warehouseApi } from '@/api/warehouse'
+import { goodsApi } from '@/api/goods'
 
 export default {
   name: 'DashboardPage',
@@ -139,58 +141,39 @@ export default {
       stats: [
         {
           title: '总仓库数',
-          value: '12',
-          trend: 2,
+          value: '0',
+          trend: 0,
           unit: '个',
-          icon: 'el-icon-warehouse',
+          icon: 'el-icon-s-home',
           color: '#409EFF'
         },
         {
           title: '总货品数',
-          value: '1,234',
-          trend: 156,
+          value: '0',
+          trend: 0,
           unit: '件',
           icon: 'el-icon-goods',
           color: '#67C23A'
         },
         {
           title: '本月入库',
-          value: '5,678',
-          trend: 234,
+          value: '0',
+          trend: 0,
           unit: '件',
           icon: 'el-icon-upload2',
           color: '#E6A23C'
         },
         {
           title: '本月出库',
-          value: '4,567',
-          trend: 189,
+          value: '0',
+          trend: 0,
           unit: '件',
           icon: 'el-icon-download',
           color: '#F56C6C'
         }
       ],
       recentLogs: [],
-      notifications: [
-        {
-          text: '张三完成了iPhone 15的入库操作，数量：50',
-          time: '2分钟前',
-          icon: 'el-icon-success',
-          color: '#67C23A'
-        },
-        {
-          text: '李四完成了洗发水的出库操作，数量：20',
-          time: '15分钟前',
-          icon: 'el-icon-warning',
-          color: '#E6A23C'
-        },
-        {
-          text: '王五从一号仓库调货到二号仓库，数量：10',
-          time: '1小时前',
-          icon: 'el-icon-info',
-          color: '#409EFF'
-        }
-      ],
+      notifications: [],
       quickActions: [
         { label: '添加入库', path: '/stock/log', type: 'success', icon: 'el-icon-upload2' },
         { label: '添加出库', path: '/stock/log', type: 'warning', icon: 'el-icon-download' },
@@ -220,76 +203,154 @@ export default {
     async fetchData() {
       this.loading = true
       
-      // 模拟数据
-      setTimeout(() => {
-        this.recentLogs = [
-          {
-            id: 1,
-            goods_name: 'iPhone 15',
-            warehouse_name: '一号仓库',
-            type: 'inbound',
-            quantity: 50,
-            operator: '张三',
-            operate_time: '2024-01-15 10:30:00'
-          },
-          {
-            id: 2,
-            goods_name: '洗发水',
-            warehouse_name: '二号仓库',
-            type: 'outbound',
-            quantity: 20,
-            operator: '李四',
-            operate_time: '2024-01-15 14:20:00'
-          },
-          {
-            id: 3,
-            goods_name: '笔记本电脑',
-            warehouse_name: '一号仓库',
-            type: 'inbound',
-            quantity: 30,
-            operator: '王五',
-            operate_time: '2024-01-15 16:00:00'
-          },
-          {
-            id: 4,
-            goods_name: '纸巾',
-            warehouse_name: '二号仓库',
-            type: 'outbound',
-            quantity: 100,
-            operator: '赵六',
-            operate_time: '2024-01-15 18:30:00'
-          },
-          {
-            id: 5,
-            goods_name: '矿泉水',
-            warehouse_name: '三号仓库',
-            type: 'inbound',
-            quantity: 200,
-            operator: '钱七',
-            operate_time: '2024-01-16 09:00:00'
-          }
-        ]
-        this.totalLogs = 25
+      // 1. 获取仓库总数
+      try {
+        const warehouseRes = await warehouseApi.getWarehouseList()
+        if (warehouseRes.code === 200) {
+          this.stats[0].value = warehouseRes.data.length.toLocaleString()
+        }
+      } catch (error) {
+        console.error('获取仓库列表失败', error)
+      }
+
+      // 2. 获取货品总数
+      try {
+        const goodsRes = await goodsApi.getGoodsList({ pageNum: 1, pageSize: 1 })
+        if (goodsRes.code === 200) {
+          this.stats[1].value = goodsRes.data.total.toLocaleString()
+        }
+      } catch (error) {
+        console.error('获取货品总数失败', error)
+      }
+
+      // 3. 获取最近出入库记录
+      try {
+        const logRes = await stockApi.getStockLogPage({ 
+          pageNum: this.currentPage, 
+          pageSize: 5 
+        })
+        if (logRes.code === 200) {
+          this.recentLogs = logRes.data.records
+          this.totalLogs = logRes.data.total
+          
+          // 生成通知 (使用最新的日志)
+           this.notifications = this.recentLogs.map(log => {
+             const isInbound = log.type === 1
+             return {
+               text: `${log.operator}完成了${log.goodsName}的${isInbound ? '入库' : '出库'}操作，数量：${log.num}`,
+               time: this.formatTime(log.createTime),
+               icon: isInbound ? 'el-icon-success' : 'el-icon-warning',
+               color: isInbound ? ' #67C23A' : '#E6A23C'
+             }
+           }).slice(0, 5) // 只显示前5条
+         }
+      } catch (error) {
+        console.error('获取日志失败', error)
+      }
+
+      // 4. 获取出入库趋势 (使用日志列表聚合计算)
+      try {
+         // 计算日期范围 (最近7天)
+         const end = new Date();
+         const start = new Date();
+          start.setTime(start.getTime() - 3600 * 1000 * 24 * 6); // 包含今天共7天
+          
+          // 获取时间段内的所有日志 (限制数量以防太多，这里假设最多1000条用于统计)
+         const logListRes = await stockApi.getStockLogPage({
+            pageNum: 1,
+            pageSize: 1000
+            // 注意：这里需要后端支持时间范围查询，如果不支持，只能获取最近的日志进行前端过滤
+            // 假设后端支持 start_date 和 end_date 参数，如果不支持，可能需要 fallback
+         })
+         
+         if (logListRes.code === 200) {
+            const logs = logListRes.data.records;
+            const trendData = this.calculateTrendFromLogs(logs, start, end);
+            
+            this.updateChart(trendData);
+            
+            // 计算本月数据
+            const currentMonth = new Date().getMonth();
+            let monthIn = 0;
+            let monthOut = 0;
+            
+            logs.forEach(log => {
+                const logDate = new Date(log.createTime);
+                if (logDate.getMonth() === currentMonth) {
+                    if (log.type === 1) monthIn += log.num;
+                    if (log.type === 2) monthOut += log.num;
+                }
+            });
+            
+            this.stats[2].value = monthIn.toLocaleString();
+            this.stats[3].value = monthOut.toLocaleString();
+         }
+      } catch (error) {
+         console.error('获取趋势数据失败', error);
+         // 初始化空图表以防报错
+         this.updateChart([]);
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // 从日志计算趋势
+    calculateTrendFromLogs(logs, startDate, endDate) {
+        const days = [];
+        const result = [];
         
-        // 更新图表
-        this.updateChart()
-        this.loading = false
-      }, 500)
+        // 生成日期序列
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            days.push(this.formatDate(d));
+        }
+        
+        days.forEach(dateStr => {
+            let inboundNum = 0;
+            let outboundNum = 0;
+            
+            logs.forEach(log => {
+                if (log.createTime.startsWith(dateStr)) {
+                    if (log.type === 1) inboundNum += log.num; // 入库
+                    if (log.type === 2) outboundNum += log.num; // 出库
+                }
+            });
+            
+            result.push({
+                date: dateStr.substring(5), // MM-DD
+                inboundNum,
+                outboundNum
+            });
+        });
+        
+        return result;
+    },
+    
+    // 格式化时间
+    formatTime(timeStr) {
+        if (!timeStr) return ''
+        const date = new Date(timeStr)
+        const now = new Date()
+        const diff = now - date
+        
+        if (diff < 60000) return '刚刚'
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`
+        return timeStr.split(' ')[0]
+    },
+
+    formatDate(date) {
+        const y = date.getFullYear()
+        const m = (date.getMonth() + 1).toString().padStart(2, '0')
+        const d = date.getDate().toString().padStart(2, '0')
+        return `${y}-${m}-${d}`
     },
     
     // 更新图表
-    updateChart() {
-      const dates = []
-      const inboundData = []
-      const outboundData = []
-      
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        dates.push(`${date.getMonth() + 1}/${date.getDate()}`)
-        inboundData.push(Math.floor(Math.random() * 100) + 50)
-        outboundData.push(Math.floor(Math.random() * 80) + 30)
-      }
+    updateChart(data = []) {
+      // 如果没有数据，使用空数组
+      const dates = data.map(item => item.date)
+      const inboundData = data.map(item => item.inbound)
+      const outboundData = data.map(item => item.outbound)
       
       const option = {
         tooltip: {
@@ -371,7 +432,27 @@ export default {
     // 分页变化
     handlePageChange(page) {
       this.currentPage = page
-      this.fetchData()
+      this.fetchData() // 这里的逻辑需要微调，因为fetchData会刷新所有数据，最好拆分
+      // 为了简单起见，这里只更新日志
+      this.fetchLogs()
+    },
+    
+    async fetchLogs() {
+        this.loading = true
+        try {
+            const logRes = await stockApi.getStockLogPage({ 
+                pageNum: this.currentPage, 
+                pageSize: 5 
+            })
+            if (logRes.code === 200) {
+                this.recentLogs = logRes.data.records
+                this.totalLogs = logRes.data.total
+            }
+        } catch(e) {
+            console.error(e)
+        } finally {
+            this.loading = false
+        }
     },
     
     // 窗口大小变化
@@ -440,6 +521,10 @@ export default {
 
 .trend-down {
   color: #F56C6C;
+}
+
+.trend-flat {
+  color: #909399;
 }
 
 .stat-icon {

@@ -184,21 +184,24 @@ export default {
 .send-btn {
   flex: 0 0 140px;
 }
-.register-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #eef2f7 0%, #e6ecf5 100%);
-  padding: 20px;
-}
-.register-card {
-  width: 560px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-  padding: 24px 24px 8px;
-}
+  /* 注册卡片背景色调整 */
+  .register-card {
+    width: 560px;
+    background-color: #eafff6; /* 浅薄荷绿背景 */
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    padding: 24px 24px 8px;
+  }
+
+  /* 页面大背景调整 */
+  .register-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #d7f3ef 0%, #c9ece7 100%);
+    padding: 20px;
+  }
 .card-header h3 {
   margin: 0;
   font-size: 20px;
@@ -221,5 +224,64 @@ export default {
   text-align: center;
   color: #909399;
 }
+  /* 输入框背景适配 (白色，去黑底) */
+  /deep/ .el-input__inner {
+    background-color: #ffffff !important;
+    border-color: #dcdfe6 !important;
+    color: #606266 !important;
+  }
+  
+  /deep/ .el-input__inner::placeholder {
+    color: #c0c4cc !important;
+  }
+  
+  /deep/ .el-input__inner:focus {
+    border-color: #3aa7ff !important;
+  }
+
+  /* 标签颜色适配 */
+  /deep/ .el-form-item__label {
+    color: #606266;
+    font-weight: 500;
+  }
+  
+  /* 发送验证码按钮适配 */
+  .send-btn {
+    background-color: #3aa7ff !important;
+    border-color: #3aa7ff !important;
+  }
+  
+  .send-btn:hover {
+    background-color: #66b1ff !important;
+    border-color: #66b1ff !important;
+  }
+
+  /* 提交按钮适配 */
+  .block-btn {
+    background-color: #3aa7ff !important;
+    border-color: #3aa7ff !important;
+    font-size: 16px;
+    margin-top: 10px;
+  }
+
+  .block-btn:hover {
+    background-color: #66b1ff !important;
+    border-color: #66b1ff !important;
+  }
+
+  /* 注册卡片背景色调整 */
+  .register-card {
+    background-color: #eafff6; /* 浅薄荷绿背景 */
+  }
+
+  /* 页面大背景调整 */
+  .register-page {
+    background: linear-gradient(135deg, #d7f3ef 0%, #c9ece7 100%);
+  }
+  
+  /* 头部标题颜色 */
+  .card-header h3 {
+    color: #004d40; /* 深青色标题 */
+  }
 </style>
 
