@@ -12,8 +12,8 @@
         label-width="120px"
         style="max-width: 800px;"
       >
-        <el-form-item label="源仓库" prop="from_warehouse_id">
-          <el-select v-model="transferForm.from_warehouse_id" placeholder="请选择源仓库" style="width: 100%;" @change="handleFromWarehouseChange">
+        <el-form-item label="源仓库" prop="sourceWarehouseId">
+          <el-select v-model="transferForm.sourceWarehouseId" placeholder="请选择源仓库" style="width: 100%;" @change="handleFromWarehouseChange">
             <el-option 
               v-for="item in warehouseList" 
               :key="item.id" 
@@ -23,8 +23,8 @@
           </el-select>
         </el-form-item>
         
-        <el-form-item label="目标仓库" prop="to_warehouse_id">
-          <el-select v-model="transferForm.to_warehouse_id" placeholder="请选择目标仓库" style="width: 100%;" @change="handleToWarehouseChange">
+        <el-form-item label="目标仓库" prop="targetWarehouseId">
+          <el-select v-model="transferForm.targetWarehouseId" placeholder="请选择目标仓库" style="width: 100%;" @change="handleToWarehouseChange">
             <el-option 
               v-for="item in warehouseList" 
               :key="item.id" 
@@ -34,9 +34,9 @@
           </el-select>
         </el-form-item>
         
-        <el-form-item label="货品" prop="goods_id">
+        <el-form-item label="货品" prop="goodsId">
           <el-select 
-            v-model="transferForm.goods_id" 
+            v-model="transferForm.goodsId" 
             placeholder="请选择货品" 
             filterable
             style="width: 100%;"
@@ -55,30 +55,20 @@
           <span>{{ fromStock }}</span>
         </el-form-item>
         
-        <el-form-item label="调货数量" prop="quantity">
+        <el-form-item label="调货数量" prop="num">
           <el-input-number 
-            v-model="transferForm.quantity" 
+            v-model="transferForm.num" 
             :min="1" 
             :max="fromStock"
             style="width: 100%;"
           ></el-input-number>
-          <div v-if="transferForm.quantity > fromStock" style="color: red; margin-top: 5px;">
+          <div v-if="transferForm.num > fromStock" style="color: red; margin-top: 5px;">
             调货数量不能超过源仓库库存
           </div>
         </el-form-item>
         
         <el-form-item label="对接人" prop="operator">
           <el-input v-model="transferForm.operator" placeholder="请输入对接人"></el-input>
-        </el-form-item>
-        
-        <el-form-item label="调货时间" prop="transfer_time">
-          <el-date-picker
-            v-model="transferForm.transfer_time"
-            type="datetime"
-            placeholder="选择日期时间"
-            value-format="yyyy-MM-dd HH:mm:ss"
-            style="width: 100%;">
-          </el-date-picker>
         </el-form-item>
         
         <el-form-item label="备注" prop="remark">
@@ -148,39 +138,35 @@ export default {
       pageSize: 10,
       total: 0,
       transferForm: {
-        from_warehouse_id: null,
-        to_warehouse_id: null,
-        goods_id: null,
-        quantity: 1,
+        sourceWarehouseId: null,
+        targetWarehouseId: null,
+        goodsId: null,
+        num: 1,
         operator: '',
-        transfer_time: '',
         remark: ''
       },
       transferRules: {
-        from_warehouse_id: [
+        sourceWarehouseId: [
           { required: true, message: '请选择源仓库', trigger: 'change' }
         ],
-        to_warehouse_id: [
+        targetWarehouseId: [
           { required: true, message: '请选择目标仓库', trigger: 'change' },
           { validator: (rule, value, callback) => {
-            if (value === this.transferForm.from_warehouse_id) {
+            if (value === this.transferForm.sourceWarehouseId) {
               callback(new Error('目标仓库不能与源仓库相同'))
             } else {
               callback()
             }
           }, trigger: 'change' }
         ],
-        goods_id: [
+        goodsId: [
           { required: true, message: '请选择货品', trigger: 'change' }
         ],
-        quantity: [
+        num: [
           { required: true, message: '请输入调货数量', trigger: 'blur' }
         ],
         operator: [
           { required: true, message: '请输入对接人', trigger: 'blur' }
-        ],
-        transfer_time: [
-          { required: true, message: '请选择调货时间', trigger: 'change' }
         ]
       },
       fromStock: 0
@@ -188,16 +174,15 @@ export default {
   },
   computed: {
     fromGoodsList() {
-      if (!this.transferForm.from_warehouse_id) {
+      if (!this.transferForm.sourceWarehouseId) {
         return []
       }
-      return this.goodsList.filter(g => g.warehouse_id === this.transferForm.from_warehouse_id)
+      return this.goodsList.filter(g => g.warehouseId === this.transferForm.sourceWarehouseId)
     }
   },
   created() {
     this.fetchWarehouseList()
     this.fetchTransferList()
-    this.transferForm.transfer_time = this.formatDateTime(new Date())
   },
   methods: {
     // 获取仓库列表
@@ -218,13 +203,13 @@ export default {
     // 获取货品列表 - 根据仓库ID获取
     async fetchGoodsList() {
       try {
-        if (!this.transferForm.from_warehouse_id) {
+        if (!this.transferForm.sourceWarehouseId) {
           this.goodsList = []
           return
         }
         
         // 修改API调用路径以匹配后端接口
-        const res = await goodsApi.getGoodsByWarehouse(this.transferForm.from_warehouse_id)
+        const res = await goodsApi.getGoodsByWarehouse(this.transferForm.sourceWarehouseId)
         if (res.data && Array.isArray(res.data)) {
           this.goodsList = res.data
         } else {
@@ -273,7 +258,7 @@ export default {
     
     // 源仓库变化
     handleFromWarehouseChange() {
-      this.transferForm.goods_id = null
+      this.transferForm.goodsId = null
       this.fromStock = 0
       // 在源仓库变化时重新获取货品列表
       this.fetchGoodsList()
@@ -282,9 +267,9 @@ export default {
     // 目标仓库变化
     handleToWarehouseChange() {
       // 验证不能与源仓库相同
-      if (this.transferForm.to_warehouse_id === this.transferForm.from_warehouse_id) {
+      if (this.transferForm.targetWarehouseId === this.transferForm.sourceWarehouseId) {
         this.$message.warning('目标仓库不能与源仓库相同')
-        this.transferForm.to_warehouse_id = null
+        this.transferForm.targetWarehouseId = null
       }
     },
     
@@ -293,8 +278,8 @@ export default {
       const goods = this.goodsList.find(g => g.id === goodsId)
       if (goods) {
         this.fromStock = goods.stock || 0
-        if (this.transferForm.quantity > this.fromStock) {
-          this.transferForm.quantity = this.fromStock
+        if (this.transferForm.num > this.fromStock) {
+          this.transferForm.num = this.fromStock
         }
       }
     },
@@ -304,26 +289,25 @@ export default {
       try {
         await this.$refs.transferForm.validate()
         
-        if (this.transferForm.quantity > this.fromStock) {
+        if (this.transferForm.num > this.fromStock) {
           this.$message.error('调货数量不能超过源仓库库存')
           return
         }
         
-        if (this.transferForm.from_warehouse_id === this.transferForm.to_warehouse_id) {
+        if (this.transferForm.sourceWarehouseId === this.transferForm.targetWarehouseId) {
           this.$message.error('源仓库和目标仓库不能相同')
           return
         }
         
         this.submitting = true
         
-        // 准备调货数据
+        // 准备调货数据 (已匹配 DTO)
         const transferData = {
-          from_warehouse_id: this.transferForm.from_warehouse_id,
-          to_warehouse_id: this.transferForm.to_warehouse_id,
-          goods_id: this.transferForm.goods_id,
-          quantity: this.transferForm.quantity,
+          sourceWarehouseId: this.transferForm.sourceWarehouseId,
+          targetWarehouseId: this.transferForm.targetWarehouseId,
+          goodsId: this.transferForm.goodsId,
+          num: this.transferForm.num,
           operator: this.transferForm.operator,
-          transfer_time: this.transferForm.transfer_time,
           remark: this.transferForm.remark
         }
         
@@ -350,12 +334,11 @@ export default {
     // 重置表单
     resetForm() {
       this.transferForm = {
-        from_warehouse_id: null,
-        to_warehouse_id: null,
-        goods_id: null,
-        quantity: 1,
+        sourceWarehouseId: null,
+        targetWarehouseId: null,
+        goodsId: null,
+        num: 1,
         operator: '',
-        transfer_time: this.formatDateTime(new Date()),
         remark: ''
       }
       this.fromStock = 0

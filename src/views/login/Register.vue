@@ -225,22 +225,22 @@ export default {
   color: #909399;
 }
   /* 输入框背景适配 (白色，去黑底) */
-  /deep/ .el-input__inner {
+  .el-input__inner {
     background-color: #ffffff !important;
     border-color: #dcdfe6 !important;
     color: #606266 !important;
   }
   
-  /deep/ .el-input__inner::placeholder {
+ .el-input__inner::placeholder {
     color: #c0c4cc !important;
   }
   
-  /deep/ .el-input__inner:focus {
+.el-input__inner:focus {
     border-color: #3aa7ff !important;
   }
 
   /* 标签颜色适配 */
-  /deep/ .el-form-item__label {
+ .el-form-item__label {
     color: #606266;
     font-weight: 500;
   }

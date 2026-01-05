@@ -69,8 +69,8 @@ export default {
   data() {
     return {
       searchForm: {
-        start_date: '',
-        end_date: ''
+        startDate: '',
+        endDate: ''
       },
       dateRange: [],
       loading: false,
@@ -114,37 +114,41 @@ export default {
       this.loading = true
       
       try {
-        // 调用后端API获取数据
-        const res = await reportApi.getGoodsTop10(this.searchForm)
-        
-        // 正确解析后端返回的数据
-        const data = res.data || []
-        
-        // 从数据中提取日期和数量信息
-        const dates = data.map(item => item.lastOperationTime.split('T')[0])
-        const inboundData = data.map(item => item.inboundTotal)
-        const outboundData = data.map(item => item.outboundTotal)
-        
-        // 更新图表
-        this.updateChart(dates, inboundData, outboundData)
-        
+        // 1. 获取排行榜数据
+        const rankRes = await reportApi.getGoodsTop10(this.searchForm)
+        const rankData = rankRes.data || []
         
         // 更新排行榜数据
-        this.rankingList = data.map(item => ({
+        this.rankingList = rankData.map(item => ({
           goodsName: item.goodsName,
-          warehouse_name: item.warehouse_name,
+          warehouse_name: item.warehouseName || item.warehouse_name || '-',
           inboundTotal: item.inboundTotal,
           outboundTotal: item.outboundTotal,
-          totalInOut: item.totalInOut
+          totalInOut: (item.inboundTotal || 0) - (item.outboundTotal || 0)
         }))
+
+        // 2. 获取每日趋势数据
+        const trendRes = await reportApi.getCompanyDailyTrend(this.searchForm)
+        const trendData = trendRes.data || []
+        
+        // 准备图表数据
+        // 后端返回的数据字段为 outboundTotal, inboundTotal, date
+        const dates = trendData.map(item => item.date)
+        const inboundData = trendData.map(item => item.inboundTotal)
+        const outboundData = trendData.map(item => item.outboundTotal)
+        
+        // 更新图表 (折线图)
+        this.updateChart(dates, inboundData, outboundData)
+        
       } catch (error) {
+        console.error('获取数据失败:', error)
         this.$message.error('获取数据失败')
       } finally {
         this.loading = false
       }
     },
     
-    // 更新图表
+    // 更新图表 (折线图)
     updateChart(dates, inboundData, outboundData) {
       const option = {
         title: {
@@ -170,7 +174,11 @@ export default {
         xAxis: {
           type: 'category',
           boundaryGap: false,
-          data: dates
+          data: dates,
+          axisLabel: {
+            interval: 'auto',
+            rotate: 30
+          }
         },
         yAxis: {
           type: 'value',
@@ -226,11 +234,11 @@ export default {
     // 日期范围变化
     handleDateChange(val) {
       if (val && val.length === 2) {
-        this.searchForm.start_date = val[0]
-        this.searchForm.end_date = val[1]
+        this.searchForm.startDate = val[0]
+        this.searchForm.endDate = val[1]
       } else {
-        this.searchForm.start_date = ''
-        this.searchForm.end_date = ''
+        this.searchForm.startDate = ''
+        this.searchForm.endDate = ''
       }
     },
     

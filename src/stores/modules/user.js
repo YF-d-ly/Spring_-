@@ -113,7 +113,7 @@ const actions = {
   // 邮箱验证码登录
   async loginByCode({ commit, dispatch }, { email, code }) {
     try {
-      const response = await service.post('/auth/login/code', {
+      const response = await service.post('/auth/login/email', {
         email,
         code
       });

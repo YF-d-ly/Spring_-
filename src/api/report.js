@@ -26,6 +26,15 @@ export const reportApi = {
       method: 'get',
       params
     })
+  },
+
+  // 获取企业整体每日进出趋势
+  getCompanyDailyTrend(params) {
+    return service({
+      url: '/report/company-daily-trend',
+      method: 'get',
+      params
+    })
   }
 
 }

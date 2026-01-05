@@ -53,10 +53,10 @@
           <template slot-scope="scope">
             <el-image 
               v-if="scope.row.imageUrl"
-              :src="scope.row.imageUrl" 
+              :src="resolveImageUrl(scope.row.imageUrl)" 
               style="width: 60px; height: 60px;"
               fit="cover"
-              :preview-src-list="[scope.row.imageUrl]">
+              :preview-src-list="[resolveImageUrl(scope.row.imageUrl)]">
             </el-image>
             <span v-else>无图片</span>
           </template>
@@ -160,7 +160,7 @@
             :before-upload="beforeUpload"
             :http-request="handleUpload"
           >
-            <img v-if="goodsForm.imageUrl" :src="goodsForm.imageUrl" class="avatar">
+            <img v-if="goodsForm.imageUrl" :src="resolveImageUrl(goodsForm.imageUrl)" class="avatar">
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
           </el-upload>
           <div style="margin-top: 10px;">
@@ -459,6 +459,13 @@ export default {
         })
         
         if (res.code === 200) {
+          // 后端返回的 URL 可能没有 /api 前缀，导致 404
+          // 比如返回 http://localhost:8080/images/paper.jpg
+          // 但前端访问时，可能需要通过代理 /api/images/paper.jpg 或者直接访问 8080
+          
+          // 如果后端返回的是完整 URL (http://localhost:8080/...)，则直接使用
+          // 如果后端返回的是相对路径 (/images/...)，可能需要处理
+          
           this.goodsForm.imageUrl = res.data 
           this.$message.success('图片上传成功')
         } else {
@@ -483,6 +490,18 @@ export default {
     handleCurrentChange(val) {
       this.currentPage = val
       this.fetchGoodsList()
+    },
+    
+    // 解析图片 URL
+    resolveImageUrl(url) {
+      if (!url) return ''
+      if (url.startsWith('http') || url.startsWith('https')) {
+        return url
+      }
+      if (url.startsWith('/')) {
+        return url
+      }
+      return '/' + url
     }
   }
 }

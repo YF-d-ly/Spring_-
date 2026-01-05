@@ -251,11 +251,13 @@ export default {
         
         let res
         if (this.loginMethod === 'password') {
+          // 密码登录调用 login action (api: /auth/login)
           res = await this.login({
             username: this.loginForm.username,
             password: this.loginForm.password
           })
         } else {
+          // 邮箱验证码登录调用 loginByCode action (api: /auth/login/email)
           res = await this.loginByCode({
             email: this.loginForm.email,
             code: this.loginForm.code

@@ -5,7 +5,15 @@ export const userApi = {
   // 用户登录
   login(data) {
     return service({
-      url: '/auth/login', // 修改为正确的登录接口路径
+      url: '/auth/login', // 恢复为 /auth/login
+      method: 'post',
+      data
+    })
+  },
+  // 邮箱验证码登录
+  loginByEmail(data) {
+    return service({
+      url: '/auth/login/email', // 恢复为 /auth/login/email
       method: 'post',
       data
     })
